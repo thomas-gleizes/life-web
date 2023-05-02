@@ -15,15 +15,7 @@ export class Board {
     this._cells = Array.from({ length: sizeX }, (_, x) =>
       Array.from(
         { length: sizeY },
-        (_, y) =>
-          new Cell(
-            x,
-            y,
-            Math.round(x / 2) == y ||
-              x == sizeX - y - 1 ||
-              x == Math.round(sizeX / 2) ||
-              y == Math.round(sizeY / 2)
-          )
+        (_, y) => new Cell(x, y, x === Math.floor(sizeX / 2) || y === Math.floor(sizeY / 2))
       )
     )
 

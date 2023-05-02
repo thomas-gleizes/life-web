@@ -1,3 +1,4 @@
+import lodash from "lodash"
 import { Board } from "./Board.ts"
 import { Coordinate } from "./Coordinate.ts"
 
@@ -85,14 +86,45 @@ export class Game {
     }
   }
 
-  togglePlay(): void {
+  public togglePlay(): void {
     console.log("toggle", this._loop)
     this._loop = !this._loop
+  }
+
+  public isPlaying(): boolean {
+    return this._loop
+  }
+
+  public getSpeed(): number {
+    return this._interval
+  }
+
+  public increaseSpeed(time?: number): number {
+    if (time) {
+      this._interval += time
+    } else if (this._interval > 0) {
+      this._interval += this._interval
+    } else {
+      this._interval = 10
+    }
+
+    return this.getSpeed()
+  }
+
+  public decreaseSpeed(time?: number): number {
+    if (time) {
+      this._interval -= time
+    } else {
+      this._interval -= this._interval / 2
+    }
+
+    return this.getSpeed()
   }
 
   set cellHeight(value: number) {
     this._cellHeight = value
   }
+
   set cellWidth(value: number) {
     this._cellWidth = value
   }
