@@ -8,3 +8,8 @@ canvas.height = window.innerHeight
 const renderer = new Renderer(canvas)
 
 void renderer.start()
+
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth
+  canvas.height = window.innerHeight
+})

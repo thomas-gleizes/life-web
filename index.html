@@ -1,13 +1,29 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="https://www.favicon.cc/favicon/192/161/favicon.ico"
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Game of life</title>
     <script defer type="module" src="/src/main.tsx"></script>
   </head>
   <body>
     <canvas></canvas>
+    <div id="settings">
+      <label for="speed">Speed</label>
+      <div class="btn-input">
+        <button id="speed-minus">-</button>
+        <input id="speed" type="number" value="100" />
+        <button id="speed-plus">+</button>
+      </div>
+      <button class="btn" id="play">Pause</button>
+      <button class="btn" id="reset">Reset</button>
+      <div>Alive Cell : <span id="cell-count">0</span></div>
+      <div>Iteration : <span id="iterate-count">0</span></div>
+    </div>
   </body>
 </html>

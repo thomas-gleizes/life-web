@@ -2,18 +2,14 @@ import PatternBuilder from "./PatternBuilder.ts"
 
 export default class Game {
   private _cellsAlive: Set<string>
+  private _iteration: number
 
   constructor() {
-    this._cellsAlive = new Set<string>([
-      ...PatternBuilder.formate(PatternBuilder.gliderGun, 1, 1),
-      ...PatternBuilder.formate(PatternBuilder.symetricY(PatternBuilder.gliderGun), 1, -1),
-      ...PatternBuilder.formate(PatternBuilder.symetricX(PatternBuilder.gliderGun), -1, 1),
-      ...PatternBuilder.formate(
-        PatternBuilder.symetricX(PatternBuilder.symetricY(PatternBuilder.gliderGun)),
-        -1,
-        -1,
-      ),
-    ])
+    this._iteration = 0
+    this._cellsAlive = new Set<string>(PatternBuilder.toCells(PatternBuilder.gliderGunX4))
+    // this._cellsAlive.add("0,0")
+    // this._cellsAlive.add("-1,0")
+    // this._cellsAlive.add("1,0")
   }
 
   private getNeighbours(x: number, y: number): Set<string> {
@@ -64,6 +60,21 @@ export default class Game {
       if (aliveNeighbours === 3) {
         this._cellsAlive.add(deadCell)
       }
+    }
+
+    this._iteration++
+  }
+
+  public get iteration(): number {
+    return this._iteration
+  }
+
+  public toggleCell(x: number, y: number): void {
+    const cell = `${x},${y}`
+    if (this._cellsAlive.has(cell)) {
+      this._cellsAlive.delete(cell)
+    } else {
+      this._cellsAlive.add(cell)
     }
   }
 
