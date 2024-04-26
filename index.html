@@ -2,11 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link
-      rel="icon"
-      type="image/svg+xml"
-      href="https://www.favicon.cc/favicon/192/161/favicon.ico"
-    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Game of life</title>
     <script defer type="module" src="/src/main.tsx"></script>
@@ -22,8 +18,12 @@
       </div>
       <button class="btn" id="play">Pause</button>
       <button class="btn" id="reset">Reset</button>
+      <button class="btn" id="clear">Clear</button>
+      <button class="btn" id="add-pattern">Add Pattern</button>
       <div>Alive Cell : <span id="cell-count">0</span></div>
       <div>Iteration : <span id="iterate-count">0</span></div>
+      <div>Center : <span id="center">(0,0)</span></div>
     </div>
+    <div id="pattern-selector"></div>
   </body>
 </html>

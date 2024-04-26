@@ -23,4 +23,9 @@ export default class SettingsIndicator {
     const iterationElement = document.getElementById("iterate-count")!
     iterationElement.textContent = iteration.toString()
   }
+
+  static setCenter(x: number, y: number) {
+    const centerElement = document.getElementById("center")!
+    centerElement.textContent = `(${x.toFixed(2)}, ${y.toFixed(2)})`
+  }
 }

@@ -1,15 +1,32 @@
-import PatternBuilder from "./PatternBuilder.ts"
+import PatternList from "./PatternList.ts"
+import Pattern from "./Pattern.ts"
 
 export default class Game {
-  private _cellsAlive: Set<string>
+  private readonly _cellsAlive: Set<string>
+  private readonly _initialCells: string[]
   private _iteration: number
 
   constructor() {
     this._iteration = 0
-    this._cellsAlive = new Set<string>(PatternBuilder.toCells(PatternBuilder.gliderGunX4))
-    // this._cellsAlive.add("0,0")
-    // this._cellsAlive.add("-1,0")
-    // this._cellsAlive.add("1,0")
+    const initialCells: string[] = []
+    initialCells.push(
+      ...new Pattern(PatternList.gliderGun).setOrigin(-50 - 100, -36 - 100).toCells(),
+    )
+    initialCells.push(
+      ...new Pattern(PatternList.gliderGun).symmetricX().setOrigin(51, -37).toCells(),
+    )
+    initialCells.push(
+      ...new Pattern(PatternList.gliderGun).symmetricY().setOrigin(-52, 38).toCells(),
+    )
+
+    this._cellsAlive = new Set<string>(initialCells)
+    this._initialCells = initialCells
+  }
+
+  public reset(): void {
+    this._cellsAlive.clear()
+    for (const cell of this._initialCells) this._cellsAlive.add(cell)
+    this._iteration = 0
   }
 
   private getNeighbours(x: number, y: number): Set<string> {
@@ -27,7 +44,12 @@ export default class Game {
     )
   }
 
-  public iterate(): void {
+  public clear(): void {
+    this._cellsAlive.clear()
+    this._iteration = 0
+  }
+
+  public async iterate(): Promise<void> {
     const cells = new Set<string>(this._cellsAlive)
     const deadCellsToChecks = new Set<string>()
 
@@ -80,5 +102,9 @@ export default class Game {
 
   public get cellsAlive(): Array<string> {
     return Array.from(this._cellsAlive)
+  }
+
+  isCellAlive(x: number, y: number): boolean {
+    return this._cellsAlive.has(`${x},${y}`)
   }
 }

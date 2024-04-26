@@ -11,17 +11,19 @@ export default class Renderer {
   private _canvas: HTMLCanvasElement
   private _context2D: CanvasRenderingContext2D
   private _game: Game
+  private _isStarted: boolean
 
   private _center: { x: number; y: number }
   private _playing: boolean
   private _delay: number
   private _scale: number
 
-  private _mouse: { x: number; y: number; isDown: boolean; timestamp: number | null }
+  private _mouse: { x: number; y: number; isDown1: boolean; isDown2: boolean; kill: boolean | null }
 
   constructor(canvas: HTMLCanvasElement) {
     this._canvas = canvas
     this._context2D = canvas.getContext("2d")!
+    this._isStarted = false
 
     this._game = new Game()
     this._center = {
@@ -32,16 +34,15 @@ export default class Renderer {
     this._delay = 100
     this._scale = 10
 
-    this._mouse = { x: 0, y: 0, isDown: false, timestamp: null }
+    this._mouse = { x: 0, y: 0, isDown1: false, isDown2: false, kill: null }
   }
 
   private drawCell(x: number, y: number) {
-    const border = 0.05
     const width = 1
 
-    const rectX = x * width * this._scale + border * this._scale + this._center.x
-    const rectY = y * width * this._scale + border * this._scale + this._center.y
-    const rectWidth = width * this._scale - border * this._scale * 2
+    const rectX = x * width * this._scale + this._center.x
+    const rectY = y * width * this._scale + this._center.y
+    const rectWidth = width * this._scale
 
     if (
       rectX + rectWidth < 0 ||
@@ -75,11 +76,15 @@ export default class Renderer {
   }
 
   private resetSettings() {
-    this._scale = 10
-    this._delay = 100
-    this._center = {
-      x: this._canvas.width / 2,
-      y: this._canvas.height / 2,
+    this._game.reset()
+  }
+
+  private toggleLife(x: number, y: number) {
+    if (this._mouse.kill === null) this._mouse.kill = this._game.isCellAlive(x, y)
+    if (this._mouse.kill && this._game.isCellAlive(x, y)) {
+      this._game.toggleCell(x, y)
+    } else if (!this._mouse.kill && !this._game.isCellAlive(x, y)) {
+      this._game.toggleCell(x, y)
     }
   }
 
@@ -92,43 +97,70 @@ export default class Renderer {
       const scaleRatio = this._scale / oldScale
       this._center.x = event.clientX - scaleRatio * (event.clientX - this._center.x)
       this._center.y = event.clientY - scaleRatio * (event.clientY - this._center.y)
+
+      SettingsIndicator.setCenter(
+        this._canvas.width / 2 - this._center.x,
+        this._canvas.height / 2 - this._center.y,
+      )
     })
 
-    this._canvas.addEventListener("mousedown", () => {
-      this._mouse.isDown = true
-      this._mouse.timestamp = Date.now()
+    this._canvas.addEventListener("mousedown", (event) => {
+      if (event.button === 0) {
+        this._mouse.isDown1 = true
+        const x = Math.floor((event.clientX - this._center.x) / this._scale)
+        const y = Math.floor((event.clientY - this._center.y) / this._scale)
+        this.toggleLife(x, y)
+      } else if (event.button === 2) {
+        this._canvas.style.cursor = "grabbing"
+        this._mouse.isDown2 = true
+      }
     })
 
     this._canvas.addEventListener("mouseup", (event) => {
-      this._mouse.isDown = false
-
-      if (Date.now() - this._mouse.timestamp! < 200) {
-        const x = Math.floor((event.clientX - this._center.x) / this._scale)
-        const y = Math.floor((event.clientY - this._center.y) / this._scale)
-
-        this._game.toggleCell(x, y)
+      if (event.button === 0) {
+        this._mouse.isDown1 = false
+        this._mouse.kill = null
+      } else if (event.button === 2) {
+        this._canvas.style.cursor = "unset"
+        this._mouse.isDown2 = false
       }
-
-      this._mouse.timestamp = null
     })
 
     this._canvas.addEventListener("mousemove", (event) => {
       this._mouse.x = event.clientX
       this._mouse.y = event.clientY
 
-      if (this._mouse.isDown) {
+      if (this._mouse.isDown2) {
         this._center.x += event.movementX
         this._center.y += event.movementY
+
+        SettingsIndicator.setCenter(
+          this._canvas.width / 2 - this._center.x,
+          this._canvas.height / 2 - this._center.y,
+        )
+      } else if (this._mouse.isDown1) {
+        const x = Math.floor((event.clientX - this._center.x) / this._scale)
+        const y = Math.floor((event.clientY - this._center.y) / this._scale)
+        this.toggleLife(x, y)
       }
     })
 
     this._canvas.addEventListener("mouseleave", () => {
-      this._mouse.isDown = false
+      this._mouse.isDown2 = false
+      this._mouse.isDown1 = false
+      this._mouse.kill = null
+      this._canvas.style.cursor = "unset"
+    })
+
+    this._canvas.addEventListener("contextmenu", (event) => {
+      event.preventDefault()
     })
 
     document.getElementById("reset")!.addEventListener("click", () => this.resetSettings())
 
     document.getElementById("play")!.addEventListener("click", () => this.togglePlaying())
+
+    document.getElementById("clear")!.addEventListener("click", () => this._game.clear())
 
     document.getElementById("speed")!.addEventListener("input", (event) => {
       const input = event.target as HTMLInputElement
@@ -177,6 +209,9 @@ export default class Renderer {
   }
 
   public async start() {
+    if (this._isStarted) throw new Error("Renderer is already started")
+    this._isStarted = true
+
     this.setUpEventListeners()
 
     setInterval(() => {
@@ -186,7 +221,7 @@ export default class Renderer {
 
     while (true) {
       while (this._playing) {
-        this._game.iterate()
+        void this._game.iterate()
         SettingsIndicator.setIteration(this._game.iteration)
         await this.sleep(this._delay)
       }
