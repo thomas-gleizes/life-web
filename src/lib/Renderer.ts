@@ -32,13 +32,13 @@ export default class Renderer {
     }
     this._playing = localStorage.getItem("playing") === "true"
     this._delay = 100
-    this._scale = 10
+    this._scale = 1
 
     this._mouse = { x: 0, y: 0, isDown1: false, isDown2: false, kill: null }
   }
 
   private drawCell(x: number, y: number) {
-    const width = 1
+    const width = 5
 
     const rectX = x * width * this._scale + this._center.x
     const rectY = y * width * this._scale + this._center.y
@@ -55,6 +55,10 @@ export default class Renderer {
 
     this._context2D.fillStyle = "white"
     this._context2D.fillRect(rectX, rectY, rectWidth, rectWidth)
+
+    this._context2D.strokeStyle = "black"
+    this._context2D.lineWidth = this._scale * 0.2
+    this._context2D.strokeRect(rectX, rectY, rectWidth, rectWidth)
   }
 
   private render() {
