@@ -28,4 +28,14 @@ export default class SettingsIndicator {
     const centerElement = document.getElementById("center")!
     centerElement.textContent = `(${x.toFixed(2)}, ${y.toFixed(2)})`
   }
+
+  static setPerformanceI(time: number) {
+    const performanceElement = document.getElementById("perf-i")!
+    performanceElement.textContent = `${time}`
+  }
+
+  static setPerformanceR(time: number) {
+    const performanceElement = document.getElementById("perf-r")!
+    performanceElement.textContent = `${time}`
+  }
 }

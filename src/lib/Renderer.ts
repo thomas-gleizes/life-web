@@ -58,11 +58,14 @@ export default class Renderer {
   }
 
   private render() {
+    const timestamp = Date.now()
     this._context2D.clearRect(0, 0, this._canvas.width, this._canvas.height)
     for (const cell of this._game.cellsAlive) {
       const [x, y] = cell.split(",").map(Number)
       this.drawCell(x, y)
     }
+
+    SettingsIndicator.setPerformanceR(Date.now() - timestamp)
   }
 
   private sleep(ms: number) {
@@ -88,21 +91,47 @@ export default class Renderer {
     }
   }
 
+  private async iterate() {
+    const timestamp = Date.now()
+    await this._game.iterate()
+    SettingsIndicator.setIteration(this._game.iteration)
+    SettingsIndicator.setPerformanceI(Date.now() - timestamp)
+  }
+
   private setUpEventListeners() {
-    this._canvas.addEventListener("wheel", (event) => {
-      const oldScale = this._scale
-      if (event.deltaY < 0) this._scale = Math.max(Renderer.MIN_SCALE, this._scale * 0.9)
-      else this._scale = Math.min(Renderer.MAX_SCALE, this._scale * 1.1)
+    this._canvas.addEventListener(
+      "wheel",
+      (event) => {
+        if (event.ctrlKey) {
+          event.preventDefault()
 
-      const scaleRatio = this._scale / oldScale
-      this._center.x = event.clientX - scaleRatio * (event.clientX - this._center.x)
-      this._center.y = event.clientY - scaleRatio * (event.clientY - this._center.y)
+          const oldScale = this._scale
+          if (event.deltaY < 0) this._scale = Math.max(Renderer.MIN_SCALE, this._scale * 0.9)
+          else this._scale = Math.min(Renderer.MAX_SCALE, this._scale * 1.1)
 
-      SettingsIndicator.setCenter(
-        this._canvas.width / 2 - this._center.x,
-        this._canvas.height / 2 - this._center.y,
-      )
-    })
+          const scaleRatio = this._scale / oldScale
+          this._center.x = event.clientX - scaleRatio * (event.clientX - this._center.x)
+          this._center.y = event.clientY - scaleRatio * (event.clientY - this._center.y)
+
+          SettingsIndicator.setCenter(
+            this._canvas.width / 2 - this._center.x,
+            this._canvas.height / 2 - this._center.y,
+          )
+        } else {
+          console.log("Event.deltaX", event.deltaX)
+          console.log("Event.deltaY", event.deltaY)
+
+          this._center.x -= event.deltaX
+          this._center.y -= event.deltaY
+
+          SettingsIndicator.setCenter(
+            this._canvas.width / 2 - this._center.x,
+            this._canvas.height / 2 - this._center.y,
+          )
+        }
+      },
+      { passive: false },
+    )
 
     this._canvas.addEventListener("mousedown", (event) => {
       if (event.button === 0) {
@@ -177,6 +206,11 @@ export default class Renderer {
       SettingsIndicator.setDelay(this._delay)
     })
 
+    document.getElementById("rule")!.addEventListener("change", (event) => {
+      const input = event.target as HTMLSelectElement
+      this._game.setRule(input.value)
+    })
+
     document.body.addEventListener("keydown", (event) => {
       event.preventDefault()
       switch (event.key) {
@@ -185,8 +219,7 @@ export default class Renderer {
           break
         case "k":
           if (!this._playing) {
-            this._game.iterate()
-            SettingsIndicator.setIteration(this._game.iteration)
+            this.iterate()
           }
           break
         case "ArrowUp":
@@ -221,9 +254,13 @@ export default class Renderer {
 
     while (true) {
       while (this._playing) {
-        void this._game.iterate()
-        SettingsIndicator.setIteration(this._game.iteration)
-        await this.sleep(this._delay)
+        const timestamp = Date.now()
+
+        await this.iterate()
+        const iterationTime = Date.now() - timestamp
+        const sleepTime = Math.max(1, this._delay - iterationTime)
+
+        await this.sleep(sleepTime)
       }
 
       await this.sleep(100)

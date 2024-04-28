@@ -1,26 +1,30 @@
 import PatternList from "./PatternList.ts"
 import Pattern from "./Pattern.ts"
 
+const RULES = {
+  default: "Default",
+  rule6: "Rule 6",
+} as const
+
 export default class Game {
-  private readonly _cellsAlive: Set<string>
+  private _cellsAlive: Set<string>
   private readonly _initialCells: string[]
   private _iteration: number
+  private rule: keyof typeof RULES
+  private _worker: Worker
 
   constructor() {
-    this._iteration = 0
     const initialCells: string[] = []
-    initialCells.push(
-      ...new Pattern(PatternList.gliderGun).setOrigin(-50 - 100, -36 - 100).toCells(),
-    )
-    initialCells.push(
-      ...new Pattern(PatternList.gliderGun).symmetricX().setOrigin(51, -37).toCells(),
-    )
-    initialCells.push(
-      ...new Pattern(PatternList.gliderGun).symmetricY().setOrigin(-52, 38).toCells(),
-    )
+    initialCells.push(...new Pattern(PatternList.gliderGun).toCells())
+    initialCells.push(...new Pattern(PatternList.gliderGun).symmetricX().toCells())
+    initialCells.push(...new Pattern(PatternList.gliderGun).symmetricY().toCells())
+    initialCells.push(...new Pattern(PatternList.gliderGun).symmetricXY().toCells())
 
     this._cellsAlive = new Set<string>(initialCells)
     this._initialCells = initialCells
+    this._iteration = 0
+    this.rule = "default"
+    this._worker = new Worker(new URL("../workers/iterate.ts", import.meta.url))
   }
 
   public reset(): void {
@@ -29,19 +33,8 @@ export default class Game {
     this._iteration = 0
   }
 
-  private getNeighbours(x: number, y: number): Set<string> {
-    return new Set(
-      [
-        [x - 1, y - 1],
-        [x - 1, y],
-        [x - 1, y + 1],
-        [x, y - 1],
-        [x, y + 1],
-        [x + 1, y - 1],
-        [x + 1, y],
-        [x + 1, y + 1],
-      ].map((neighbour) => neighbour.join(",")),
-    )
+  public setRule(rule: keyof typeof RULES): void {
+    this.rule = rule
   }
 
   public clear(): void {
@@ -49,42 +42,20 @@ export default class Game {
     this._iteration = 0
   }
 
-  public async iterate(): Promise<void> {
-    const cells = new Set<string>(this._cellsAlive)
-    const deadCellsToChecks = new Set<string>()
+  public iterate(): Promise<void> {
+    return new Promise((resolve) => {
+      this._worker.postMessage({
+        type: "iterate",
+        cellsAlive: Array.from(this._cellsAlive),
+        rule: this.rule,
+      })
 
-    for (const cell of cells) {
-      const [x, y] = cell.split(",").map(Number)
-      const neighbours = this.getNeighbours(x, y)
-      let aliveNeighbours = 0
-
-      for (const neighbour of neighbours) {
-        if (cells.has(neighbour)) {
-          aliveNeighbours++
-        } else {
-          deadCellsToChecks.add(neighbour)
-        }
+      this._worker.onmessage = (event) => {
+        resolve()
+        this._cellsAlive = new Set(event.data.result)
+        this._iteration++
       }
-
-      if (aliveNeighbours < 2 || aliveNeighbours > 3) {
-        this._cellsAlive.delete(cell)
-      }
-    }
-
-    for (const deadCell of deadCellsToChecks) {
-      const [x, y] = deadCell.split(",").map(Number)
-      const neighbours = this.getNeighbours(x, y)
-
-      const aliveNeighbours = Array.from(neighbours).filter((neighbour) =>
-        cells.has(neighbour),
-      ).length
-
-      if (aliveNeighbours === 3) {
-        this._cellsAlive.add(deadCell)
-      }
-    }
-
-    this._iteration++
+    })
   }
 
   public get iteration(): number {

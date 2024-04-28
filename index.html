@@ -8,6 +8,7 @@
     <script defer type="module" src="/src/main.tsx"></script>
   </head>
   <body>
+    <div id="pattern-selector"></div>
     <canvas></canvas>
     <div id="settings">
       <label for="speed">Speed</label>
@@ -20,10 +21,14 @@
       <button class="btn" id="reset">Reset</button>
       <button class="btn" id="clear">Clear</button>
       <button class="btn" id="add-pattern">Add Pattern</button>
+      <select id="rule">
+        <option value="default" selected>Default</option>
+        <option value="rule6">Rule 6</option>
+      </select>
       <div>Alive Cell : <span id="cell-count">0</span></div>
       <div>Iteration : <span id="iterate-count">0</span></div>
       <div>Center : <span id="center">(0,0)</span></div>
+      <div>Performance : R = <span id="perf-r">0</span>ms, I = <span id="perf-i">0</span>ms</div>
     </div>
-    <div id="pattern-selector"></div>
   </body>
 </html>
