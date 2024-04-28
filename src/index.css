@@ -17,9 +17,8 @@ canvas {
   background-color: #090909;
 }
 
-#settings {
+#settings, #stats {
   position: fixed;
-  top: 10px;
   left: 10px;
   padding: 10px 15px;
   border-radius: 4px;
@@ -29,6 +28,14 @@ canvas {
   align-items: center;
   gap: 10px;
   color: white;
+}
+
+#stats {
+  bottom: 10px
+}
+
+#settings {
+  top: 10px;
 }
 
 .btn-input {
@@ -63,16 +70,23 @@ canvas {
   }
 }
 
-.btn {
-  outline: none;
-  border: none;
-  background-color: var(--primary-color);
-  font-size: 16px;
-  color: white;
-  padding: 5px 10px;
+.btn-group {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   border-radius: 4px;
-  font-weight: normal;
-  cursor: pointer;
+  overflow: hidden;
+
+  button {
+    outline: none;
+    border: none;
+    background-color: var(--primary-color);
+    font-size: 16px;
+    color: white;
+    padding: 5px 10px;
+    font-weight: normal;
+    cursor: pointer;
+  }
 }
 
 select {
@@ -95,3 +109,4 @@ select {
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.5);
 }
+

@@ -1,5 +1,6 @@
 import PatternList from "./PatternList.ts"
 import Pattern from "./Pattern.ts"
+import { iterate } from "../utils/iterate.ts"
 
 const RULES = {
   default: "Default",
@@ -12,19 +13,24 @@ export default class Game {
   private _iteration: number
   private rule: keyof typeof RULES
   private _worker: Worker
+  private _useWorker: boolean
 
   constructor() {
     const initialCells: string[] = []
-    initialCells.push(...new Pattern(PatternList.gliderGun).toCells())
-    initialCells.push(...new Pattern(PatternList.gliderGun).symmetricX().toCells())
-    initialCells.push(...new Pattern(PatternList.gliderGun).symmetricY().toCells())
-    initialCells.push(...new Pattern(PatternList.gliderGun).symmetricXY().toCells())
+    for (let i = 0; i < 10; i++) {
+      initialCells.push(...new Pattern(PatternList.gliderGun).setOrigin(i * 40, 0).toCells())
+      initialCells.push(...new Pattern(PatternList.gliderGun).setOrigin(-40, i * 30).toCells())
+    }
 
     this._cellsAlive = new Set<string>(initialCells)
     this._initialCells = initialCells
     this._iteration = 0
     this.rule = "default"
-    this._worker = new Worker(new URL("../workers/iterate.ts", import.meta.url))
+    this._useWorker = false
+    this._worker = new Worker(new URL("../workers/iterate.ts", import.meta.url), {
+      name: "iterate",
+      type: "module",
+    })
   }
 
   public reset(): void {
@@ -42,20 +48,24 @@ export default class Game {
     this._iteration = 0
   }
 
-  public iterate(): Promise<void> {
-    return new Promise((resolve) => {
-      this._worker.postMessage({
-        type: "iterate",
-        cellsAlive: Array.from(this._cellsAlive),
-        rule: this.rule,
+  public async iterate(): Promise<void> {
+    if (this._useWorker)
+      return new Promise((resolve) => {
+        this._worker.postMessage({
+          type: "iterate",
+          cellsAlive: Array.from(this._cellsAlive),
+          rule: this.rule,
+        })
+
+        this._worker.onmessage = (event) => {
+          this._cellsAlive = new Set(event.data.result)
+          this._iteration++
+          resolve()
+        }
       })
 
-      this._worker.onmessage = (event) => {
-        resolve()
-        this._cellsAlive = new Set(event.data.result)
-        this._iteration++
-      }
-    })
+    this._cellsAlive = await iterate(this._cellsAlive)
+    this._iteration++
   }
 
   public get iteration(): number {
@@ -69,6 +79,11 @@ export default class Game {
     } else {
       this._cellsAlive.add(cell)
     }
+  }
+
+  public toggleWorker(): boolean {
+    this._useWorker = !this._useWorker
+    return this._useWorker
   }
 
   public get cellsAlive(): Array<string> {

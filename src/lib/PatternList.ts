@@ -10,13 +10,7 @@ export default class PatternList {
 
   public static cubeX9: CellPattern = [...this.cubeX4, [2, 0], [0, 2], [2, 2], [1, 2], [2, 1]]
 
-  public static barHX3: CellPattern = [
-    [0, 0],
-    [1, 0],
-    [2, 0],
-  ]
-
-  public static barVX3: CellPattern = [
+  public static barX3: CellPattern = [
     [0, 0],
     [0, 1],
     [0, 2],

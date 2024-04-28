@@ -1,12 +1,14 @@
+import { displayNumber } from "../utils/displayNumber.ts"
+
 export default class SettingsIndicator {
   static setCellCount(count: number) {
     const cellCount = document.getElementById("cell-count")!
-    cellCount.textContent = count.toString()
+    cellCount.textContent = displayNumber(count)
   }
 
   static setPlaying(playing: boolean) {
     const playButton = document.getElementById("play")!
-    playButton.textContent = playing ? "Pause" : "Play"
+    playButton.children.item(0)!.className = playing ? "fa fa-pause" : "fa fa-play"
   }
 
   static setDelay(delay: number) {
@@ -21,12 +23,12 @@ export default class SettingsIndicator {
 
   static setIteration(iteration: number) {
     const iterationElement = document.getElementById("iterate-count")!
-    iterationElement.textContent = iteration.toString()
+    iterationElement.textContent = displayNumber(iteration)
   }
 
   static setCenter(x: number, y: number) {
     const centerElement = document.getElementById("center")!
-    centerElement.textContent = `(${x.toFixed(2)}, ${y.toFixed(2)})`
+    centerElement.textContent = `(${displayNumber(Math.floor(x))}, ${displayNumber(Math.floor(y))})`
   }
 
   static setPerformanceI(time: number) {
@@ -37,5 +39,15 @@ export default class SettingsIndicator {
   static setPerformanceR(time: number) {
     const performanceElement = document.getElementById("perf-r")!
     performanceElement.textContent = `${time}`
+  }
+
+  static togglePatterList(display: boolean) {
+    const element = document.getElementById("pattern-selector")!
+    element.style.display = display ? "block" : "none"
+  }
+
+  static toggleWorker(worker: boolean) {
+    const element = document.getElementById("use-worker")!
+    element.firstElementChild!.className = worker ? "fa-solid fa-microchip" : "fa fa-user-tie"
   }
 }

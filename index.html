@@ -6,29 +6,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Game of life</title>
     <script defer type="module" src="/src/main.tsx"></script>
+    <script src="https://kit.fontawesome.com/aeff68f984.js" crossorigin="anonymous"></script>
   </head>
   <body>
-    <div id="pattern-selector"></div>
+    <div id="pattern-selector">
+      <div class="modal-c">
+        <i class="fa fa-times"></i>
+      </div>
+    </div>
     <canvas></canvas>
     <div id="settings">
-      <label for="speed">Speed</label>
       <div class="btn-input">
         <button id="speed-minus">-</button>
         <input id="speed" type="number" value="100" />
         <button id="speed-plus">+</button>
       </div>
-      <button class="btn" id="play">Pause</button>
-      <button class="btn" id="reset">Reset</button>
-      <button class="btn" id="clear">Clear</button>
-      <button class="btn" id="add-pattern">Add Pattern</button>
+      <div class="btn-group">
+        <button class="btn" id="play">
+          <i class="fa fa-pause"></i>
+        </button>
+        <button class="btn" id="reset">
+          <i class="fa fa-chevron-left"></i>
+        </button>
+        <button class="btn" id="clear">
+          <i class="fa fa-trash"></i>
+        </button>
+        <button class="btn" id="use-worker">
+          <i class="fa-solid fa-user-tie"></i>
+        </button>
+        <button class="btn" id="add-pattern">
+          <i class="fa fa-plus"></i>
+        </button>
+      </div>
+
       <select id="rule">
         <option value="default" selected>Default</option>
         <option value="rule6">Rule 6</option>
       </select>
-      <div>Alive Cell : <span id="cell-count">0</span></div>
+    </div>
+    <div id="stats">
+      <div>Alive : <span id="cell-count">0</span></div>
       <div>Iteration : <span id="iterate-count">0</span></div>
-      <div>Center : <span id="center">(0,0)</span></div>
       <div>Performance : R = <span id="perf-r">0</span>ms, I = <span id="perf-i">0</span>ms</div>
+      <div>Center : <span id="center">(0,0)</span></div>
     </div>
   </body>
 </html>
