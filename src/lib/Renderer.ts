@@ -208,7 +208,7 @@ export default class Renderer {
 
     document.getElementById("rule")!.addEventListener("change", (event) => {
       const input = event.target as HTMLSelectElement
-      this._game.setRule(input.value)
+      this._game.setRule(input.value as "default" | "rule6")
     })
 
     document.body.addEventListener("keydown", (event) => {
