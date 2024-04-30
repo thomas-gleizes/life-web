@@ -120,6 +120,8 @@ export default class Renderer {
         this._canvas.width / 2 - this._center.x,
         this._canvas.height / 2 - this._center.y,
       )
+
+      SettingsIndicator.setScaleIndicator(+this._scale.toFixed(2))
     })
 
     this._canvas.addEventListener("mousedown", (event) => {
@@ -243,15 +245,33 @@ export default class Renderer {
             this.iterate()
           }
           break
-        case "ArrowUp":
-          this._delay = Math.floor(
-            +Math.min(Renderer.MAX_DELAY, (this._delay + 1) * 1.1).toFixed(2),
+        case "ArrowRight":
+          this._center.x -= this._scale * 2
+          SettingsIndicator.setCenter(
+            this._canvas.width / 2 - this._center.x,
+            this._canvas.height / 2 - this._center.y,
           )
-          SettingsIndicator.setDelay(this._delay)
+          break
+        case "ArrowLeft":
+          this._center.x += this._scale * 2
+          SettingsIndicator.setCenter(
+            this._canvas.width / 2 - this._center.x,
+            this._canvas.height / 2 - this._center.y,
+          )
+          break
+        case "ArrowUp":
+          this._center.y -= this._scale * 2
+          SettingsIndicator.setCenter(
+            this._canvas.width / 2 - this._center.x,
+            this._canvas.height / 2 - this._center.y,
+          )
           break
         case "ArrowDown":
-          this._delay = Math.floor(+Math.max(Renderer.MIN_DELAY, this._delay * 0.9).toFixed(2))
-          SettingsIndicator.setDelay(this._delay)
+          this._center.y += this._scale * 2
+          SettingsIndicator.setCenter(
+            this._canvas.width / 2 - this._center.x,
+            this._canvas.height / 2 - this._center.y,
+          )
           break
         case "i":
           console.log("This._scale", this._scale)

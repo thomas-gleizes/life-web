@@ -40,7 +40,9 @@ export default class Game {
   }
 
   public addPattern(pattern: Pattern, originX: number = 0, originY: number = 0): void {
-    for (const [x, y] of pattern.getCells()) {
+    const p = pattern.clone().centerOrigin()
+
+    for (const [x, y] of p.getCells()) {
       this._cellsAlive.add(`${x + originX},${y + originY}`)
     }
   }

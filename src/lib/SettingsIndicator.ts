@@ -33,6 +33,11 @@ export default class SettingsIndicator {
     centerElement.textContent = `(${displayNumber(Math.floor(x))}, ${displayNumber(Math.floor(y))})`
   }
 
+  static setScaleIndicator(scale: number) {
+    const scaleElement = document.getElementById("scale-indicator")!
+    scaleElement.textContent = displayNumber(scale)
+  }
+
   static setPerformanceI(time: number) {
     const performanceElement = document.getElementById("perf-i")!
     performanceElement.textContent = `${time}`
@@ -64,37 +69,45 @@ export default class SettingsIndicator {
     }
   }
 
+  private static setPattern(pattern: Pattern, canvas: HTMLCanvasElement) {
+    canvas.width = 200
+    canvas.height = 100
+
+    const context = canvas.getContext("2d")!
+
+    const size = pattern.getSize()
+    const scale = Math.min(canvas.width / size[0], canvas.height / size[1]) * 0.8
+
+    for (const [x, y] of pattern.getCells()) {
+      const rectX = x * scale + (canvas.width / 2 - (size[0] * scale) / 2)
+      const rectY = y * scale + (canvas.height / 2 - (size[1] * scale) / 2)
+      const rectWidth = scale
+      const border = rectWidth / 10
+
+      context.fillStyle = "white"
+      context.fillRect(
+        rectX + border / 2,
+        rectY + border / 2,
+        rectWidth - border,
+        rectWidth - border,
+      )
+    }
+  }
+
   static setupPatternList(onClick: (pattern: Pattern) => void) {
     const list = document.getElementById("pattern-list")!
     for (const [name, pattern] of Object.entries(PATTERNS_LIST)) {
       const canvas = document.createElement("canvas")
       canvas.addEventListener("click", () => onClick(pattern))
-      const context = canvas.getContext("2d")!
+
       const div = document.createElement("div")
-      div.textContent = name
+      div.textContent = pattern.name ?? name
       div.appendChild(canvas)
       list.appendChild(div)
 
-      canvas.width = 200
-      canvas.height = 100
+      div.id = `pi-${name}`
 
-      const size = pattern.getSize()
-      const scale = Math.min(canvas.width / size[0], canvas.height / size[1]) * 0.8
-
-      for (const [x, y] of pattern.getCells()) {
-        const rectX = x * scale + (canvas.width / 2 - (size[0] * scale) / 2)
-        const rectY = y * scale + (canvas.height / 2 - (size[1] * scale) / 2)
-        const rectWidth = scale
-        const border = rectWidth / 10
-
-        context.fillStyle = "white"
-        context.fillRect(
-          rectX + border / 2,
-          rectY + border / 2,
-          rectWidth - border,
-          rectWidth - border,
-        )
-      }
+      SettingsIndicator.setPattern(pattern, canvas)
     }
   }
 }
