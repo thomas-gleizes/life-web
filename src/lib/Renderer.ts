@@ -1,5 +1,7 @@
 import Game from "./Game.ts"
 import SettingsIndicator from "./SettingsIndicator.ts"
+import { RULES_LIST } from "../utils/constants.ts"
+import Rule from "./Rule.ts"
 
 export default class Renderer {
   private static readonly FPS = 60
@@ -213,9 +215,12 @@ export default class Renderer {
     })
 
     document.getElementById("rule")!.addEventListener("change", (event) => {
-      const input = event.target as HTMLSelectElement
-      this._game.setRule(input.value as "default" | "rule6")
+      const target = event.target as HTMLSelectElement
+      const rule: Rule = RULES_LIST[target.value as keyof typeof RULES_LIST]
+      this._game.setRule(rule)
     })
+
+    SettingsIndicator.setUpRulesSelect()
 
     document
       .getElementById("use-worker")!

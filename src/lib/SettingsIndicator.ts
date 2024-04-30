@@ -1,4 +1,5 @@
 import { displayNumber } from "../utils/displayNumber.ts"
+import { RULES_LIST } from "../utils/constants.ts"
 
 export default class SettingsIndicator {
   static setCellCount(count: number) {
@@ -49,5 +50,15 @@ export default class SettingsIndicator {
   static toggleWorker(worker: boolean) {
     const element = document.getElementById("use-worker")!
     element.firstElementChild!.className = worker ? "fa-solid fa-microchip" : "fa fa-user-tie"
+  }
+
+  static setUpRulesSelect() {
+    const select = document.getElementById("rule")! as HTMLSelectElement
+    for (const rule of Object.entries(RULES_LIST)) {
+      const option = document.createElement("option")
+      option.value = rule[0]
+      option.textContent = rule[1].name
+      select.appendChild(option)
+    }
   }
 }

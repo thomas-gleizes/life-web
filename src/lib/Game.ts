@@ -1,31 +1,29 @@
 import PatternList from "./PatternList.ts"
-import Pattern from "./Pattern.ts"
 import { iterate } from "../utils/iterate.ts"
-
-const RULES = {
-  default: "Default",
-  rule6: "Rule 6",
-} as const
+import Rule from "./Rule.ts"
+import { RULES_LIST } from "../utils/constants.ts"
+import Pattern from "./Pattern.ts"
 
 export default class Game {
   private _cellsAlive: Set<string>
   private readonly _initialCells: string[]
   private _iteration: number
-  private rule: keyof typeof RULES
+  private rule: Rule
   private _worker: Worker
   private _useWorker: boolean
 
   constructor() {
     const initialCells: string[] = []
-    for (let i = 0; i < 10; i++) {
-      initialCells.push(...new Pattern(PatternList.gliderGun).setOrigin(i * 40, 0).toCells())
-      initialCells.push(...new Pattern(PatternList.gliderGun).setOrigin(-40, i * 30).toCells())
-    }
+
+    initialCells.push(...new Pattern(PatternList.gliderGun).toCells())
+    initialCells.push(...new Pattern(PatternList.gliderGun).symmetricX().toCells())
+    initialCells.push(...new Pattern(PatternList.gliderGun).symmetricY().toCells())
+    initialCells.push(...new Pattern(PatternList.gliderGun).symmetricXY().toCells())
 
     this._cellsAlive = new Set<string>(initialCells)
     this._initialCells = initialCells
     this._iteration = 0
-    this.rule = "default"
+    this.rule = RULES_LIST.Conway
     this._useWorker = false
     this._worker = new Worker(new URL("../workers/iterate.ts", import.meta.url), {
       name: "iterate",
@@ -39,7 +37,7 @@ export default class Game {
     this._iteration = 0
   }
 
-  public setRule(rule: keyof typeof RULES): void {
+  public setRule(rule: Rule): void {
     this.rule = rule
   }
 
@@ -53,8 +51,8 @@ export default class Game {
       return new Promise((resolve) => {
         this._worker.postMessage({
           type: "iterate",
-          cellsAlive: Array.from(this._cellsAlive),
-          rule: this.rule,
+          cellsAlive: this._cellsAlive,
+          rule: this.rule.toObject(),
         })
 
         this._worker.onmessage = (event) => {
@@ -64,7 +62,7 @@ export default class Game {
         }
       })
 
-    this._cellsAlive = await iterate(this._cellsAlive)
+    this._cellsAlive = await iterate(this._cellsAlive, this.rule)
     this._iteration++
   }
 

@@ -1,10 +1,15 @@
+import Rule from "./Rule.ts"
+import { RULES_LIST } from "../utils/constants.ts"
+
 export type CellPattern = [number, number][]
 
 export default class Pattern {
   private cells: CellPattern
+  private readonly _rule: Rule
 
-  constructor(pattern: CellPattern = []) {
+  constructor(pattern: CellPattern = [], rule: Rule = RULES_LIST.Conway) {
     this.cells = [...pattern]
+    this._rule = rule
   }
 
   public addCellPattern(pattern: CellPattern) {
@@ -58,5 +63,9 @@ export default class Pattern {
 
   public toCells(): string[] {
     return this.cells.map(([x, y]) => `${x},${y}`)
+  }
+
+  public get rule(): Rule {
+    return this._rule
   }
 }

@@ -1,9 +1,10 @@
 import { iterate } from "../utils/iterate.ts"
+import Rule from "../lib/Rule.ts"
 
 onmessage = (event) => {
   switch (event.data.type) {
     case "iterate":
-      iterate(new Set(event.data.cellsAlive)).then((result) => {
+      iterate(event.data.cellsAlive, Rule.createFromObject(event.data.rule)).then((result) => {
         postMessage({ type: "result", result })
       })
       break
