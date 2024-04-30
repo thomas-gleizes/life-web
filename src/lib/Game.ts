@@ -1,6 +1,6 @@
 import { iterate } from "../utils/iterate.ts"
 import Rule from "./Rule.ts"
-import { RULES_LIST } from "../utils/constants.ts"
+import { PATTERNS_LIST, RULES_LIST } from "../utils/constants.ts"
 import Pattern from "./Pattern.ts"
 
 export default class Game {
@@ -12,10 +12,9 @@ export default class Game {
   private _useWorker: boolean
 
   constructor() {
-    const initialCells: string[] = []
+    this._cellsAlive = new Set<string>(PATTERNS_LIST.pulsar.clone().centerOrigin().toCells())
 
-    this._cellsAlive = new Set<string>(initialCells)
-    this._initialCells = initialCells
+    this._initialCells = Array.from(this._cellsAlive)
     this._iteration = 0
     this.rule = RULES_LIST.Conway
     this._useWorker = false

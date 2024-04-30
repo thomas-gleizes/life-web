@@ -4,19 +4,14 @@ import { RULES_LIST } from "../utils/constants.ts"
 export type CellPattern = [number, number]
 
 export default class Pattern {
-  private _name: string
+  private readonly _name: string
   private cells: CellPattern[]
   private readonly _rule: Rule
 
-  constructor(pattern: CellPattern[] = [], rule: Rule = RULES_LIST.Conway) {
+  constructor(pattern: CellPattern[] = [], name = "", rule: Rule = RULES_LIST.Conway) {
     this.cells = [...pattern]
     this._rule = rule
-    this._name = ""
-  }
-
-  public setName(name: string) {
     this._name = name
-    return this
   }
 
   public get name() {
@@ -119,6 +114,10 @@ export default class Pattern {
     const [[minX, minY]] = this.getBoundingBox()
     this.cells = this.cells.map(([x, y]) => [x - minX, y - minY])
     return this
+  }
+
+  public clone(): Pattern {
+    return new Pattern(this.cells, this._name, this._rule)
   }
 
   static parse(string: string): Pattern {
