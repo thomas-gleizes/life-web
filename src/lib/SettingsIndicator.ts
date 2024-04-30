@@ -1,5 +1,6 @@
 import { displayNumber } from "../utils/displayNumber.ts"
 import { RULES_LIST } from "../utils/constants.ts"
+import PatternList from "./PatternList.ts"
 
 export default class SettingsIndicator {
   static setCellCount(count: number) {
@@ -42,9 +43,10 @@ export default class SettingsIndicator {
     performanceElement.textContent = `${time}`
   }
 
-  static togglePatterList(display: boolean) {
-    const element = document.getElementById("pattern-selector")!
-    element.style.display = display ? "block" : "none"
+  static toggleMenu() {
+    const element = document.getElementById("menu")!
+    console.log("Element.style.right", element.style.right)
+    element.style.right = element.style.right !== "0px" ? "0px" : "-40vw"
   }
 
   static toggleWorker(worker: boolean) {
@@ -61,4 +63,6 @@ export default class SettingsIndicator {
       select.appendChild(option)
     }
   }
+
+  static setupPatternList() {}
 }

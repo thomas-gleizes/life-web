@@ -194,8 +194,10 @@ export default class Renderer {
     document.getElementById("clear")!.addEventListener("click", () => this._game.clear())
 
     document
-      .getElementById("add-pattern")!
-      .addEventListener("click", () => SettingsIndicator.togglePatterList(true))
+      .getElementById("menu-button")!
+      .addEventListener("click", () => SettingsIndicator.toggleMenu())
+
+    SettingsIndicator.setupPatternList()
 
     document.getElementById("speed")!.addEventListener("input", (event) => {
       const input = event.target as HTMLInputElement

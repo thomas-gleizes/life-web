@@ -2,7 +2,7 @@ import Rule from "../lib/Rule.ts"
 
 export const RULES_LIST = {
   Conway: new Rule(
-    "Conway's Game of Life",
+    "Conway",
     "In Conway's Game of Life, a cell dies if it has fewer than 2 neighbors (underpopulation) or more than 3 neighbors (overpopulation). A dead cell becomes alive if it has exactly 3 neighbors (reproduction).",
     [0, 1, 4, 5, 6, 7, 8],
     [3],
@@ -25,11 +25,23 @@ export const RULES_LIST = {
     [0, 1, 4, 5, 6, 7, 8],
     [2, 3],
   ),
-  lifeWithoutDeath: new Rule(
-    "Life without Death",
+  lifeWithoutDeath2: new Rule(
+    "Life without Death 2",
+    "In Life without Death, a cell stays alive if it has 1, 2, 3, 4, 5, 6, 7, or 8 neighbors. A dead cell becomes alive if it has exactly 2 neighbors.",
+    [],
+    [2],
+  ),
+  lifeWithoutDeath3: new Rule(
+    "Life without Death 2",
     "In Life without Death, a cell stays alive if it has 1, 2, 3, 4, 5, 6, 7, or 8 neighbors. A dead cell becomes alive if it has exactly 3 neighbors.",
     [],
     [3],
+  ),
+  lifeWithoutDeath4: new Rule(
+    "Life without Death 4",
+    "In Life without Death, a cell stays alive if it has 1, 2, 3, 4, 5, 6, 7, or 8 neighbors. A dead cell becomes alive if it has exactly 4 neighbors.",
+    [],
+    [4],
   ),
   life34: new Rule(
     "34 Life",

@@ -9,24 +9,29 @@
     <script src="https://kit.fontawesome.com/aeff68f984.js" crossorigin="anonymous"></script>
   </head>
   <body>
-    <div id="pattern-selector">
-      <div class="modal-c">
-        <i class="fa fa-times"></i>
+    <div id="menu">
+      <div class="menu-header">
+        <div class="active">Pattern</div>
+        <div>Rules</div>
+      </div>
+      <div class="menu-content">
+        <div id="pattern-list"></div>
+        <div id="rules-list"></div>
       </div>
     </div>
     <canvas></canvas>
     <div id="settings">
       <div class="btn-input">
-        <button id="speed-minus">-</button>
+        <button id="speed-minus"><i class="fa fa-minus"></i></button>
         <input id="speed" type="number" value="100" />
-        <button id="speed-plus">+</button>
+        <button id="speed-plus"><i class="fa fa-plus"></i></button>
       </div>
       <div class="btn-group">
         <button class="btn" id="play">
           <i class="fa fa-pause"></i>
         </button>
         <button class="btn" id="reset">
-          <i class="fa fa-chevron-left"></i>
+          <i class="fa fa-rotate-left"></i>
         </button>
         <button class="btn" id="clear">
           <i class="fa fa-trash"></i>
@@ -34,8 +39,8 @@
         <button class="btn" id="use-worker">
           <i class="fa-solid fa-user-tie"></i>
         </button>
-        <button class="btn" id="add-pattern">
-          <i class="fa fa-plus"></i>
+        <button class="btn" id="menu-button">
+          <i class="fa fa-bars"></i>
         </button>
       </div>
 
