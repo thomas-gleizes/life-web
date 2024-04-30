@@ -2,6 +2,7 @@ import Game from "./Game.ts"
 import SettingsIndicator from "./SettingsIndicator.ts"
 import { RULES_LIST } from "../utils/constants.ts"
 import Rule from "./Rule.ts"
+import Pattern from "./Pattern.ts"
 
 export default class Renderer {
   private static readonly FPS = 60
@@ -22,6 +23,7 @@ export default class Renderer {
 
   private _mouse: { x: number; y: number; isDown1: boolean; isDown2: boolean; kill: boolean | null }
   private _askReset: boolean
+  private _patternCopy: Pattern | null
 
   constructor(canvas: HTMLCanvasElement) {
     this._canvas = canvas
@@ -39,6 +41,7 @@ export default class Renderer {
 
     this._mouse = { x: 0, y: 0, isDown1: false, isDown2: false, kill: null }
     this._askReset = false
+    this._patternCopy = null
   }
 
   private drawCell(x: number, y: number) {
@@ -105,36 +108,25 @@ export default class Renderer {
 
   private setUpEventListeners() {
     this._canvas.addEventListener("wheel", (event) => {
-      const isMouse = event.deltaX === 0 || event.deltaY === 0
-      event.preventDefault()
+      const oldScale = this._scale
+      if (event.deltaY < 0) this._scale = Math.max(Renderer.MIN_SCALE, this._scale * 0.9)
+      else this._scale = Math.min(Renderer.MAX_SCALE, this._scale * 1.1)
 
-      if (event.ctrlKey && isMouse) {
-        const oldScale = this._scale
-        if (event.deltaY < 0) this._scale = Math.max(Renderer.MIN_SCALE, this._scale * 0.9)
-        else this._scale = Math.min(Renderer.MAX_SCALE, this._scale * 1.1)
+      const scaleRatio = this._scale / oldScale
+      this._center.x = event.clientX - scaleRatio * (event.clientX - this._center.x)
+      this._center.y = event.clientY - scaleRatio * (event.clientY - this._center.y)
 
-        const scaleRatio = this._scale / oldScale
-        this._center.x = event.clientX - scaleRatio * (event.clientX - this._center.x)
-        this._center.y = event.clientY - scaleRatio * (event.clientY - this._center.y)
-
-        SettingsIndicator.setCenter(
-          this._canvas.width / 2 - this._center.x,
-          this._canvas.height / 2 - this._center.y,
-        )
-      } else {
-        this._center.x -= event.deltaX
-        this._center.y -= event.deltaY
-
-        SettingsIndicator.setCenter(
-          this._canvas.width / 2 - this._center.x,
-          this._canvas.height / 2 - this._center.y,
-        )
-      }
+      SettingsIndicator.setCenter(
+        this._canvas.width / 2 - this._center.x,
+        this._canvas.height / 2 - this._center.y,
+      )
     })
 
     this._canvas.addEventListener("mousedown", (event) => {
       if (event.button === 0) {
         this._mouse.isDown1 = true
+        if (!this._patternCopy) return
+
         const x = Math.floor((event.clientX - this._center.x) / this._scale)
         const y = Math.floor((event.clientY - this._center.y) / this._scale)
         this.toggleLife(x, y)
@@ -148,6 +140,15 @@ export default class Renderer {
       if (event.button === 0) {
         this._mouse.isDown1 = false
         this._mouse.kill = null
+
+        if (this._patternCopy) {
+          this._game.addPattern(
+            this._patternCopy,
+            Math.floor((event.clientX - this._center.x) / this._scale),
+            Math.floor((event.clientY - this._center.y) / this._scale),
+          )
+          this._patternCopy = null
+        }
       } else if (event.button === 2) {
         this._canvas.style.cursor = "unset"
         this._mouse.isDown2 = false
@@ -167,6 +168,8 @@ export default class Renderer {
           this._canvas.height / 2 - this._center.y,
         )
       } else if (this._mouse.isDown1) {
+        if (this._patternCopy) return
+
         const x = Math.floor((event.clientX - this._center.x) / this._scale)
         const y = Math.floor((event.clientY - this._center.y) / this._scale)
         this.toggleLife(x, y)
@@ -197,8 +200,6 @@ export default class Renderer {
       .getElementById("menu-button")!
       .addEventListener("click", () => SettingsIndicator.toggleMenu())
 
-    SettingsIndicator.setupPatternList()
-
     document.getElementById("speed")!.addEventListener("input", (event) => {
       const input = event.target as HTMLInputElement
       this._delay = Math.floor(
@@ -223,6 +224,9 @@ export default class Renderer {
     })
 
     SettingsIndicator.setUpRulesSelect()
+    SettingsIndicator.setupPatternList((pattern) => {
+      this._patternCopy = pattern
+    })
 
     document
       .getElementById("use-worker")!

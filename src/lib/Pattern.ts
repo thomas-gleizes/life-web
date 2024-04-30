@@ -1,18 +1,29 @@
 import Rule from "./Rule.ts"
 import { RULES_LIST } from "../utils/constants.ts"
 
-export type CellPattern = [number, number][]
+export type CellPattern = [number, number]
 
 export default class Pattern {
-  private cells: CellPattern
+  private _name: string
+  private cells: CellPattern[]
   private readonly _rule: Rule
 
-  constructor(pattern: CellPattern = [], rule: Rule = RULES_LIST.Conway) {
+  constructor(pattern: CellPattern[] = [], rule: Rule = RULES_LIST.Conway) {
     this.cells = [...pattern]
     this._rule = rule
+    this._name = ""
   }
 
-  public addCellPattern(pattern: CellPattern) {
+  public setName(name: string) {
+    this._name = name
+    return this
+  }
+
+  public get name() {
+    return this._name
+  }
+
+  public addCellPattern(pattern: CellPattern[]) {
     this.cells.push(...pattern)
     return this
   }
@@ -57,15 +68,104 @@ export default class Pattern {
     return this
   }
 
-  public getCells(): CellPattern {
+  public getCells(): CellPattern[] {
     return this.cells
   }
 
   public toCells(): string[] {
-    return this.cells.map(([x, y]) => `${x},${y}`)
+    return this.cells.map(([x, y]) => `${Math.floor(x)},${Math.floor(y)}`)
   }
 
   public get rule(): Rule {
     return this._rule
+  }
+
+  public getBoundingBox() {
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+
+    for (const [x, y] of this.cells) {
+      minX = Math.min(minX, x)
+      minY = Math.min(minY, y)
+      maxX = Math.max(maxX, x)
+      maxY = Math.max(maxY, y)
+    }
+
+    return [
+      [minX, minY],
+      [maxX, maxY],
+    ]
+  }
+
+  public getSize() {
+    const [[minX, minY], [maxX, maxY]] = this.getBoundingBox()
+    return [maxX - minX + 1, maxY - minY + 1]
+  }
+
+  public getCenter() {
+    const [[minX, minY], [maxX, maxY]] = this.getBoundingBox()
+    return [(minX + maxX) / 2, (minY + maxY) / 2]
+  }
+
+  public centerOrigin() {
+    const [centerX, centerY] = this.getCenter()
+    this.cells = this.cells.map(([x, y]) => [x - centerX, y - centerY])
+    return this
+  }
+
+  public toZeros() {
+    const [[minX, minY]] = this.getBoundingBox()
+    this.cells = this.cells.map(([x, y]) => [x - minX, y - minY])
+    return this
+  }
+
+  static parse(string: string): Pattern {
+    const pattern = new Pattern()
+    let ignore = false
+    let step = 1
+    let x = 0
+    let y = 0
+    let match
+    let number
+
+    for (let i = 0; i < string.length; i++) {
+      if (ignore) {
+        if (string[i] === "\n") {
+          ignore = false
+        }
+        continue
+      }
+      switch (string[i]) {
+        case "#":
+        case "x":
+        case "!":
+          ignore = true
+          continue
+        case "$":
+          x = 0
+          y += step
+          continue
+        case "b":
+          x += step
+          step = 1
+          continue
+        case "o":
+          for (let j = 0; j < step; j++) {
+            pattern.addCell(x++, y)
+          }
+          step = 1
+          continue
+      }
+      match = string.slice(i).match(/[0-9]+/)
+      if (match && !match.index) {
+        number = match[0]
+        step = parseInt(number)
+        i += number.length - 1
+      }
+    }
+
+    return pattern
   }
 }

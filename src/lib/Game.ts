@@ -1,4 +1,3 @@
-import PatternList from "./PatternList.ts"
 import { iterate } from "../utils/iterate.ts"
 import Rule from "./Rule.ts"
 import { RULES_LIST } from "../utils/constants.ts"
@@ -14,11 +13,6 @@ export default class Game {
 
   constructor() {
     const initialCells: string[] = []
-
-    initialCells.push(...new Pattern(PatternList.gliderGun).toCells())
-    initialCells.push(...new Pattern(PatternList.gliderGun).symmetricX().toCells())
-    initialCells.push(...new Pattern(PatternList.gliderGun).symmetricY().toCells())
-    initialCells.push(...new Pattern(PatternList.gliderGun).symmetricXY().toCells())
 
     this._cellsAlive = new Set<string>(initialCells)
     this._initialCells = initialCells
@@ -44,6 +38,12 @@ export default class Game {
   public clear(): void {
     this._cellsAlive.clear()
     this._iteration = 0
+  }
+
+  public addPattern(pattern: Pattern, originX: number = 0, originY: number = 0): void {
+    for (const [x, y] of pattern.getCells()) {
+      this._cellsAlive.add(`${x + originX},${y + originY}`)
+    }
   }
 
   public async iterate(): Promise<void> {
