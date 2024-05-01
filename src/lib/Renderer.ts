@@ -64,7 +64,7 @@ export default class Renderer {
         rectY + rectWidth < 0 ||
         rectY > this._canvas.height
       ) {
-        return
+        continue
       }
 
       this._context2D.fillStyle = "white"
