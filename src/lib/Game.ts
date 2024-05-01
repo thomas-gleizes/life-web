@@ -40,11 +40,8 @@ export default class Game {
   }
 
   public addPattern(pattern: Pattern, originX: number = 0, originY: number = 0): void {
-    const p = pattern.clone().centerOrigin()
-
-    for (const [x, y] of p.getCells()) {
-      this._cellsAlive.add(`${x + originX},${y + originY}`)
-    }
+    for (const [x, y] of pattern.clone().centerOrigin().getCells())
+      this._cellsAlive.add(`${Math.floor(x + originX)},${Math.floor(y + originY)}`)
   }
 
   public async iterate(): Promise<void> {

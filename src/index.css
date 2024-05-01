@@ -145,25 +145,53 @@ select {
     #pattern-list {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      padding: 2px;
-      align-items: center;
       overflow-y: auto;
-      height: calc(100vh - 50px);
+      margin: 5px 10px;
+      height: fit-content;
+      max-height: calc(100vh - 65px);
 
       div {
-        margin: 10px;
+        margin-top: 5px;
+
+        .pattern-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+
+          h4 {
+            margin: 0;
+          }
+
+          .pattern-action {
+            display: flex;
+            justify-content: end;
+          }
+        }
 
         canvas {
           width: 100%;
-          height: 100px;
-          border: 1px solid black;
+          height: 150px;
           cursor: pointer;
           background-color: black;
-          padding: 10px;
         }
       }
     }
   }
 }
 
+#pattern-active {
+  display: none;
+  gap: 5px;
+
+  .btn {
+    background-color: var(--primary-color);
+    color: white;
+    outline: none;
+    border: none;
+    width: 24px;
+    height: 24px;
+    font-size: 16px;
+    border-radius: 2px;
+    cursor: pointer;
+  }
+}

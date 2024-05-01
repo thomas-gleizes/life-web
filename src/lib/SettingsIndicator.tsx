@@ -1,6 +1,9 @@
+import { render } from "preact"
 import { displayNumber } from "../utils/displayNumber.ts"
-import { PATTERNS_LIST, RULES_LIST } from "../utils/constants.ts"
+import { RULES_LIST } from "../utils/constants.ts"
 import Pattern from "./Pattern.ts"
+
+import PatternList from "../components/PatternList.tsx"
 
 export default class SettingsIndicator {
   static setCellCount(count: number) {
@@ -50,8 +53,17 @@ export default class SettingsIndicator {
 
   static toggleMenu() {
     const element = document.getElementById("menu")!
-    console.log("Element.style.right", element.style.right)
     element.style.right = element.style.right !== "0px" ? "0px" : "-40vw"
+  }
+
+  static setPatternName(pattern: string) {
+    const element = document.getElementById("pattern-active")!
+    if (pattern) {
+      element.style.display = "flex"
+      element.firstChild!.textContent = pattern
+    } else {
+      element.style.display = "none"
+    }
   }
 
   static toggleWorker(worker: boolean) {
@@ -69,45 +81,9 @@ export default class SettingsIndicator {
     }
   }
 
-  private static setPattern(pattern: Pattern, canvas: HTMLCanvasElement) {
-    canvas.width = 200
-    canvas.height = 100
-
-    const context = canvas.getContext("2d")!
-
-    const size = pattern.getSize()
-    const scale = Math.min(canvas.width / size[0], canvas.height / size[1]) * 0.8
-
-    for (const [x, y] of pattern.getCells()) {
-      const rectX = x * scale + (canvas.width / 2 - (size[0] * scale) / 2)
-      const rectY = y * scale + (canvas.height / 2 - (size[1] * scale) / 2)
-      const rectWidth = scale
-      const border = rectWidth / 10
-
-      context.fillStyle = "white"
-      context.fillRect(
-        rectX + border / 2,
-        rectY + border / 2,
-        rectWidth - border,
-        rectWidth - border,
-      )
-    }
-  }
-
   static setupPatternList(onClick: (pattern: Pattern) => void) {
     const list = document.getElementById("pattern-list")!
-    for (const [name, pattern] of Object.entries(PATTERNS_LIST)) {
-      const canvas = document.createElement("canvas")
-      canvas.addEventListener("click", () => onClick(pattern))
 
-      const div = document.createElement("div")
-      div.textContent = pattern.name ?? name
-      div.appendChild(canvas)
-      list.appendChild(div)
-
-      div.id = `pi-${name}`
-
-      SettingsIndicator.setPattern(pattern, canvas)
-    }
+    render(<PatternList onClick={onClick} />, list)
   }
 }

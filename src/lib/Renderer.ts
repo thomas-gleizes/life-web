@@ -1,13 +1,12 @@
 import Game from "./Game.ts"
-import SettingsIndicator from "./SettingsIndicator.ts"
+import SettingsIndicator from "./SettingsIndicator.tsx"
 import { RULES_LIST } from "../utils/constants.ts"
 import Rule from "./Rule.ts"
 import Pattern from "./Pattern.ts"
 
 export default class Renderer {
-  private static readonly FPS = 60
-  private static readonly MIN_SCALE = 0.05
-  private static readonly MAX_SCALE = 300
+  private static readonly FPS = 30
+  private static readonly MIN_SCALE = 0.2
   private static readonly MIN_DELAY = 1
   private static readonly MAX_DELAY = 5000
 
@@ -19,7 +18,9 @@ export default class Renderer {
   private _center: { x: number; y: number }
   private _playing: boolean
   private _delay: number
+
   private _scale: number
+  private _zoom: number
 
   private _mouse: { x: number; y: number; isDown1: boolean; isDown2: boolean; kill: boolean | null }
   private _askReset: boolean
@@ -37,44 +38,42 @@ export default class Renderer {
     }
     this._playing = localStorage.getItem("playing") === "true"
     this._delay = 100
-    this._scale = 10
+    this._scale = 10.12
+    this._zoom = 58
 
     this._mouse = { x: 0, y: 0, isDown1: false, isDown2: false, kill: null }
     this._askReset = false
     this._patternCopy = null
   }
 
-  private drawCell(x: number, y: number) {
-    const rectX = x * this._scale + this._center.x
-    const rectY = y * this._scale + this._center.y
-    const rectWidth = this._scale
-
-    if (
-      rectX + rectWidth < 0 ||
-      rectX > this._canvas.width ||
-      rectY + rectWidth < 0 ||
-      rectY > this._canvas.height
-    ) {
-      return
-    }
-
-    const border = rectWidth / 10
-
-    this._context2D.fillStyle = "white"
-    this._context2D.fillRect(
-      rectX + border / 2,
-      rectY + border / 2,
-      rectWidth - border,
-      rectWidth - border,
-    )
-  }
-
   private render() {
     const timestamp = Date.now()
     this._context2D.clearRect(0, 0, this._canvas.width, this._canvas.height)
+    const rectWidth = this._scale
+    const border = rectWidth / 10
+    const padding = border / 2
+
     for (const cell of this._game.cellsAlive) {
       const [x, y] = cell.split(",").map(Number)
-      this.drawCell(x, y)
+      const rectX = x * this._scale + this._center.x
+      const rectY = y * this._scale + this._center.y
+
+      if (
+        rectX + rectWidth < 0 ||
+        rectX > this._canvas.width ||
+        rectY + rectWidth < 0 ||
+        rectY > this._canvas.height
+      ) {
+        return
+      }
+
+      this._context2D.fillStyle = "white"
+      this._context2D.fillRect(
+        rectX + padding,
+        rectY + padding,
+        rectWidth - border,
+        rectWidth - border,
+      )
     }
 
     SettingsIndicator.setPerformanceR(Date.now() - timestamp)
@@ -91,6 +90,7 @@ export default class Renderer {
   }
 
   private toggleLife(x: number, y: number) {
+    if (this._patternCopy) return console.log("cancel")
     if (this._mouse.kill === null) this._mouse.kill = this._game.isCellAlive(x, y)
     if (this._mouse.kill && this._game.isCellAlive(x, y)) {
       this._game.toggleCell(x, y)
@@ -106,11 +106,36 @@ export default class Renderer {
     SettingsIndicator.setPerformanceI(Date.now() - timestamp)
   }
 
+  private setZoom(zoom: number) {
+    this._zoom = Math.max(0, Math.min(100, zoom))
+    let scale = Renderer.MIN_SCALE
+
+    for (let i = 0; i < this._zoom; i++) {
+      scale *= 1.07
+    }
+
+    SettingsIndicator.setScaleIndicator(this._zoom)
+
+    this._scale = scale
+  }
+
+  private reverseScale() {
+    let zoom = 0
+    let tempScale = Renderer.MIN_SCALE
+
+    while (tempScale < this._scale) {
+      tempScale *= 1.07
+      zoom++
+    }
+
+    return zoom
+  }
+
   private setUpEventListeners() {
     this._canvas.addEventListener("wheel", (event) => {
       const oldScale = this._scale
-      if (event.deltaY < 0) this._scale = Math.max(Renderer.MIN_SCALE, this._scale * 0.9)
-      else this._scale = Math.min(Renderer.MAX_SCALE, this._scale * 1.1)
+      if (event.deltaY < 0) this.setZoom(this._zoom - 1)
+      else this.setZoom(this._zoom + 1)
 
       const scaleRatio = this._scale / oldScale
       this._center.x = event.clientX - scaleRatio * (event.clientX - this._center.x)
@@ -120,8 +145,6 @@ export default class Renderer {
         this._canvas.width / 2 - this._center.x,
         this._canvas.height / 2 - this._center.y,
       )
-
-      SettingsIndicator.setScaleIndicator(+this._scale.toFixed(2))
     })
 
     this._canvas.addEventListener("mousedown", (event) => {
@@ -144,12 +167,9 @@ export default class Renderer {
         this._mouse.kill = null
 
         if (this._patternCopy) {
-          this._game.addPattern(
-            this._patternCopy,
-            Math.floor((event.clientX - this._center.x) / this._scale),
-            Math.floor((event.clientY - this._center.y) / this._scale),
-          )
-          this._patternCopy = null
+          const x = (event.clientX - this._center.x) / this._scale
+          const y = (event.clientY - this._center.y) / this._scale
+          this._game.addPattern(this._patternCopy.toZeros(), x, y)
         }
       } else if (event.button === 2) {
         this._canvas.style.cursor = "unset"
@@ -227,7 +247,13 @@ export default class Renderer {
 
     SettingsIndicator.setUpRulesSelect()
     SettingsIndicator.setupPatternList((pattern) => {
+      SettingsIndicator.setPatternName(pattern.name)
       this._patternCopy = pattern
+    })
+
+    document.getElementById("reset-pattern")!.addEventListener("click", () => {
+      SettingsIndicator.setPatternName("")
+      this._patternCopy = null
     })
 
     document
@@ -246,28 +272,28 @@ export default class Renderer {
           }
           break
         case "ArrowRight":
-          this._center.x -= this._scale * 2
+          this._center.x -= this.reverseScale()
           SettingsIndicator.setCenter(
             this._canvas.width / 2 - this._center.x,
             this._canvas.height / 2 - this._center.y,
           )
           break
         case "ArrowLeft":
-          this._center.x += this._scale * 2
-          SettingsIndicator.setCenter(
-            this._canvas.width / 2 - this._center.x,
-            this._canvas.height / 2 - this._center.y,
-          )
-          break
-        case "ArrowUp":
-          this._center.y -= this._scale * 2
+          this._center.x += this.reverseScale()
           SettingsIndicator.setCenter(
             this._canvas.width / 2 - this._center.x,
             this._canvas.height / 2 - this._center.y,
           )
           break
         case "ArrowDown":
-          this._center.y += this._scale * 2
+          this._center.y -= this.reverseScale()
+          SettingsIndicator.setCenter(
+            this._canvas.width / 2 - this._center.x,
+            this._canvas.height / 2 - this._center.y,
+          )
+          break
+        case "ArrowUp":
+          this._center.y += this.reverseScale()
           SettingsIndicator.setCenter(
             this._canvas.width / 2 - this._center.x,
             this._canvas.height / 2 - this._center.y,

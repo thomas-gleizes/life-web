@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@preact/preset-vite": "^2.8.2",
     "prettier": "^2.8.8",
     "typescript": "^5.0.2",
     "vite": "^4.3.2"
@@ -16,5 +17,8 @@
   "prettier": {
     "semi": false,
     "printWidth": 100
+  },
+  "dependencies": {
+    "preact": "^10.21.0"
   }
 }

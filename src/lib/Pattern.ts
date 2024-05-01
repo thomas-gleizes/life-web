@@ -4,7 +4,7 @@ import { RULES_LIST } from "../utils/constants.ts"
 export type CellPattern = [number, number]
 
 export default class Pattern {
-  private readonly _name: string
+  private _name: string
   private cells: CellPattern[]
   private readonly _rule: Rule
 
@@ -16,6 +16,10 @@ export default class Pattern {
 
   public get name() {
     return this._name
+  }
+
+  public set name(name: string) {
+    this._name = name
   }
 
   public addCellPattern(pattern: CellPattern[]) {
@@ -59,7 +63,8 @@ export default class Pattern {
   }
 
   public setOrigin(x: number, y: number) {
-    this.cells = this.cells.map(([dx, dy]) => [x + dx, y + dy])
+    const [[minX, minY]] = this.getBoundingBox()
+    this.cells = this.cells.map(([dx, dy]) => [x - minX + dx, y - minY + dy])
     return this
   }
 
@@ -111,8 +116,7 @@ export default class Pattern {
   }
 
   public toZeros() {
-    const [[minX, minY]] = this.getBoundingBox()
-    this.cells = this.cells.map(([x, y]) => [x - minX, y - minY])
+    this.setOrigin(0, 0)
     return this
   }
 
