@@ -1,4 +1,3 @@
-import { iterate } from "../utils/iterate.ts"
 import Rule from "./Rule.ts"
 import { PATTERNS_LIST, RULES_LIST } from "../utils/constants.ts"
 import Pattern from "./Pattern.ts"
@@ -8,8 +7,6 @@ export default class Game {
   private readonly _initialCells: string[]
   private _iteration: number
   private rule: Rule
-  private _worker: Worker
-  private _useWorker: boolean
 
   constructor() {
     this._cellsAlive = new Set<string>(PATTERNS_LIST.pulsar.clone().centerOrigin().toCells())
@@ -17,11 +14,6 @@ export default class Game {
     this._initialCells = Array.from(this._cellsAlive)
     this._iteration = 0
     this.rule = RULES_LIST.Conway
-    this._useWorker = false
-    this._worker = new Worker(new URL("../workers/iterate.ts", import.meta.url), {
-      name: "iterate",
-      type: "module",
-    })
   }
 
   public reset(): void {
@@ -40,27 +32,38 @@ export default class Game {
   }
 
   public addPattern(pattern: Pattern, originX: number = 0, originY: number = 0): void {
-    for (const [x, y] of pattern.clone().centerOrigin().getCells())
+    console.log(pattern)
+    for (const [x, y] of pattern.clone().centerOrigin().getCells()) {
       this._cellsAlive.add(`${Math.floor(x + originX)},${Math.floor(y + originY)}`)
+    }
   }
 
   public async iterate(): Promise<void> {
-    if (this._useWorker)
-      return new Promise((resolve) => {
-        this._worker.postMessage({
-          type: "iterate",
-          cellsAlive: this._cellsAlive,
-          rule: this.rule.toObject(),
-        })
+    const neighborCounts = new Map()
+    const rule = this.rule
 
-        this._worker.onmessage = (event) => {
-          this._cellsAlive = new Set(event.data.result)
-          this._iteration++
-          resolve()
+    for (const cell of this._cellsAlive) {
+      const [x, y] = cell.split(",").map(Number)
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          if (dx !== 0 || dy !== 0) {
+            const neighbor = [x + dx, y + dy].join(",")
+            const count = neighborCounts.get(neighbor) || 0
+            neighborCounts.set(neighbor, count + 1)
+          }
         }
-      })
+      }
+    }
 
-    this._cellsAlive = await iterate(this._cellsAlive, this.rule)
+    const newAliveCells = new Set<string>()
+
+    for (const [cell, count] of neighborCounts.entries()) {
+      if ((this._cellsAlive.has(cell) && !rule.mustDie(count)) || rule.mustLive(count)) {
+        newAliveCells.add(cell)
+      }
+    }
+
+    this._cellsAlive = newAliveCells
     this._iteration++
   }
 
@@ -77,16 +80,7 @@ export default class Game {
     }
   }
 
-  public toggleWorker(): boolean {
-    this._useWorker = !this._useWorker
-    return this._useWorker
-  }
-
   public get cellsAlive(): Array<string> {
     return Array.from(this._cellsAlive)
-  }
-
-  isCellAlive(x: number, y: number): boolean {
-    return this._cellsAlive.has(`${x},${y}`)
   }
 }

@@ -1,8 +1,8 @@
-import Game from "./Game.ts"
 import SettingsIndicator from "./SettingsIndicator.tsx"
 import { RULES_LIST } from "../utils/constants.ts"
 import Rule from "./Rule.ts"
 import Pattern from "./Pattern.ts"
+import { Coordinate } from "../index"
 
 export default class Renderer {
   private static readonly FPS = 30
@@ -12,7 +12,6 @@ export default class Renderer {
 
   private _canvas: HTMLCanvasElement
   private _context2D: CanvasRenderingContext2D
-  private _game: Game
   private _isStarted: boolean
 
   private _center: { x: number; y: number }
@@ -26,17 +25,20 @@ export default class Renderer {
   private _askReset: boolean
   private _patternCopy: Pattern | null
 
+  private cells: string[]
+
+  private _gameWorker: Worker
+
   constructor(canvas: HTMLCanvasElement) {
     this._canvas = canvas
     this._context2D = canvas.getContext("2d")!
     this._isStarted = false
 
-    this._game = new Game()
     this._center = {
       x: canvas.width / 2,
       y: canvas.height / 2,
     }
-    this._playing = localStorage.getItem("playing") === "true"
+    this._playing = true
     this._delay = 100
     this._scale = 10.12
     this._zoom = 58
@@ -44,16 +46,22 @@ export default class Renderer {
     this._mouse = { x: 0, y: 0, isDown1: false, isDown2: false, kill: null }
     this._askReset = false
     this._patternCopy = null
+
+    this.cells = []
+
+    this._gameWorker = new Worker(new URL("../workers/game.ts", import.meta.url), {
+      type: "module",
+    })
   }
 
-  private render() {
+  private render(cells: string[]) {
     const timestamp = Date.now()
     this._context2D.clearRect(0, 0, this._canvas.width, this._canvas.height)
     const rectWidth = this._scale
     const border = rectWidth / 10
     const padding = border / 2
 
-    for (const cell of this._game.cellsAlive) {
+    for (const cell of cells) {
       const [x, y] = cell.split(",").map(Number)
       const rectX = x * this._scale + this._center.x
       const rectY = y * this._scale + this._center.y
@@ -89,23 +97,6 @@ export default class Renderer {
     SettingsIndicator.setPlaying(this._playing)
   }
 
-  private toggleLife(x: number, y: number) {
-    if (this._patternCopy) return console.log("cancel")
-    if (this._mouse.kill === null) this._mouse.kill = this._game.isCellAlive(x, y)
-    if (this._mouse.kill && this._game.isCellAlive(x, y)) {
-      this._game.toggleCell(x, y)
-    } else if (!this._mouse.kill && !this._game.isCellAlive(x, y)) {
-      this._game.toggleCell(x, y)
-    }
-  }
-
-  private async iterate() {
-    const timestamp = Date.now()
-    await this._game.iterate()
-    SettingsIndicator.setIteration(this._game.iteration)
-    SettingsIndicator.setPerformanceI(Date.now() - timestamp)
-  }
-
   private setZoom(zoom: number) {
     this._zoom = Math.max(0, Math.min(100, zoom))
     let scale = Renderer.MIN_SCALE
@@ -131,6 +122,39 @@ export default class Renderer {
     return zoom
   }
 
+  private postMessage(type: string, message: any): Promise<any> {
+    return new Promise((resolve) => {
+      this._gameWorker.postMessage({ type, message })
+      this._gameWorker.onmessage = (event) => {
+        if (event.data.type === type) resolve(event.data.data)
+      }
+    })
+  }
+
+  private addPattern(pattern: Pattern, [x, y]: Coordinate) {
+    return this.postMessage("addPattern", { pattern: pattern.toJSON(), x, y })
+  }
+
+  private clear() {
+    return this.postMessage("clear", null)
+  }
+
+  private reset() {
+    return this.postMessage("reset", null)
+  }
+
+  private setRule(rule: Rule) {
+    return this.postMessage("rule", { rule: rule.toJson() })
+  }
+
+  private async toggleLife([x, y]: Coordinate) {
+    return this.postMessage("toggleLife", { x, y })
+  }
+
+  private async iterate() {
+    return await this.postMessage("iterate", null)
+  }
+
   private setUpEventListeners() {
     this._canvas.addEventListener("wheel", (event) => {
       const oldScale = this._scale
@@ -154,7 +178,7 @@ export default class Renderer {
 
         const x = Math.floor((event.clientX - this._center.x) / this._scale)
         const y = Math.floor((event.clientY - this._center.y) / this._scale)
-        this.toggleLife(x, y)
+        this.toggleLife([x, y])
       } else if (event.button === 2) {
         this._canvas.style.cursor = "grabbing"
         this._mouse.isDown2 = true
@@ -169,7 +193,7 @@ export default class Renderer {
         if (this._patternCopy) {
           const x = (event.clientX - this._center.x) / this._scale
           const y = (event.clientY - this._center.y) / this._scale
-          this._game.addPattern(this._patternCopy.toZeros(), x, y)
+          this.addPattern(this._patternCopy.toZeros(), [x, y])
         }
       } else if (event.button === 2) {
         this._canvas.style.cursor = "unset"
@@ -194,7 +218,7 @@ export default class Renderer {
 
         const x = Math.floor((event.clientX - this._center.x) / this._scale)
         const y = Math.floor((event.clientY - this._center.y) / this._scale)
-        this.toggleLife(x, y)
+        this.toggleLife([x, y])
       }
     })
 
@@ -211,12 +235,12 @@ export default class Renderer {
 
     document.getElementById("reset")!.addEventListener("click", () => {
       if (this._playing) this._askReset = true
-      else this._game.reset()
+      else this.clear()
     })
 
     document.getElementById("play")!.addEventListener("click", () => this.togglePlaying())
 
-    document.getElementById("clear")!.addEventListener("click", () => this._game.clear())
+    document.getElementById("clear")!.addEventListener("click", () => this.clear())
 
     document
       .getElementById("menu-button")!
@@ -242,7 +266,7 @@ export default class Renderer {
     document.getElementById("rule")!.addEventListener("change", (event) => {
       const target = event.target as HTMLSelectElement
       const rule: Rule = RULES_LIST[target.value as keyof typeof RULES_LIST]
-      this._game.setRule(rule)
+      this.setRule(rule)
     })
 
     SettingsIndicator.setUpRulesSelect()
@@ -255,10 +279,6 @@ export default class Renderer {
       SettingsIndicator.setPatternName("")
       this._patternCopy = null
     })
-
-    document
-      .getElementById("use-worker")!
-      .addEventListener("click", () => SettingsIndicator.toggleWorker(this._game.toggleWorker()))
 
     document.body.addEventListener("keydown", (event) => {
       event.preventDefault()
@@ -299,45 +319,62 @@ export default class Renderer {
             this._canvas.height / 2 - this._center.y,
           )
           break
-        case "i":
-          console.log("This._scale", this._scale)
-          console.log("This._delay", this._delay)
-          console.log("CELL alive", this._game.cellsAlive.length)
-          break
         case "r":
           if (this._playing) this._askReset = true
-          else this._game.reset()
+          else this.reset()
       }
     })
   }
 
-  public async start() {
-    if (this._isStarted) throw new Error("Renderer is already started")
-    this._isStarted = true
+  private async loopRender() {
+    while (true) {
+      const timestamp = Date.now()
+      this.render(this.cells)
+      SettingsIndicator.setCellCount(this.cells.length)
 
-    this.setUpEventListeners()
+      const performance = Date.now() - timestamp
 
-    setInterval(() => {
-      this.render()
-      SettingsIndicator.setCellCount(this._game.cellsAlive.length)
-    }, 1000 / Renderer.FPS)
+      SettingsIndicator.setPerformanceR(performance)
 
+      const sleepTime = Math.max(1, 1000 / Renderer.FPS - performance)
+
+      await this.sleep(sleepTime)
+    }
+  }
+
+  private async loopIterate() {
     while (true) {
       while (this._playing) {
-        const timestamp = Date.now()
         if (this._askReset) {
           this._askReset = false
-          this._game.reset()
+          await this.reset()
         }
 
-        await this.iterate()
-        const iterationTime = Date.now() - timestamp
-        const sleepTime = Math.max(1, this._delay - iterationTime)
+        const timestamp = Date.now()
+
+        const result = await this.iterate()
+        this.cells = result.cells
+
+        const performance = Date.now() - timestamp
+
+        const sleepTime = Math.max(1, this._delay - performance)
+        SettingsIndicator.setPerformanceI(performance)
+        SettingsIndicator.setIteration(result.iteration)
 
         await this.sleep(sleepTime)
       }
 
       await this.sleep(100)
     }
+  }
+
+  public async start() {
+    if (this._isStarted) return
+    this._isStarted = true
+
+    this.setUpEventListeners()
+
+    void this.loopRender()
+    void this.loopIterate()
   }
 }

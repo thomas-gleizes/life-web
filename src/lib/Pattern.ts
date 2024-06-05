@@ -124,6 +124,22 @@ export default class Pattern {
     return new Pattern(this.cells, this._name, this._rule)
   }
 
+  public toJSON() {
+    return {
+      name: this._name,
+      cells: this.cells,
+      rules: this._rule.toJson(),
+    }
+  }
+
+  static fromJSON(json: any): Pattern {
+    const t = new Pattern(json.cells, json.name, Rule.fromJSON(json.rules))
+
+    console.log("T", t)
+
+    return t
+  }
+
   static parse(string: string): Pattern {
     const pattern = new Pattern()
     let ignore = false

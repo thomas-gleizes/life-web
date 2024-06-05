@@ -41,7 +41,7 @@ export default class Rule {
     return this._neighborToAlive.includes(count)
   }
 
-  toObject(): {
+  toJson(): {
     name: string
     description: string
     neighborToDead: number[]
@@ -53,5 +53,9 @@ export default class Rule {
       neighborToDead: this._neighborToDead,
       neighborToAlive: this._neighborToAlive,
     }
+  }
+
+  static fromJSON(obj: any): Rule {
+    return new Rule(obj.name, obj.description, obj.neighborToDead, obj.neighborToAlive)
   }
 }
