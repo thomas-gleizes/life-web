@@ -124,7 +124,7 @@ export default class Pattern {
     return new Pattern(this.cells, this._name, this._rule)
   }
 
-  public toJSON() {
+  public toJson() {
     return {
       name: this._name,
       cells: this.cells,
@@ -132,12 +132,8 @@ export default class Pattern {
     }
   }
 
-  static fromJSON(json: any): Pattern {
-    const t = new Pattern(json.cells, json.name, Rule.fromJSON(json.rules))
-
-    console.log("T", t)
-
-    return t
+  static fromJson(json: any): Pattern {
+    return new Pattern(json.cells, json.name, Rule.fromJSON(json.rules))
   }
 
   static parse(string: string): Pattern {

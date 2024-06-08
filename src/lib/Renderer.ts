@@ -2,10 +2,17 @@ import SettingsIndicator from "./SettingsIndicator.tsx"
 import { RULES_LIST } from "../utils/constants.ts"
 import Rule from "./Rule.ts"
 import Pattern from "./Pattern.ts"
-import { Coordinate } from "../index"
+import {
+  Coordinate,
+  RequestType,
+  RequestTypeWithId,
+  ResponseType,
+  ResponseTypeWithId,
+} from "../types"
+import uuid from "../utils/uuid.ts"
 
 export default class Renderer {
-  private static readonly FPS = 30
+  private static readonly FPS = 24
   private static readonly MIN_SCALE = 0.2
   private static readonly MIN_DELAY = 1
   private static readonly MAX_DELAY = 5000
@@ -22,12 +29,10 @@ export default class Renderer {
   private _zoom: number
 
   private _mouse: { x: number; y: number; isDown1: boolean; isDown2: boolean; kill: boolean | null }
-  private _askReset: boolean
   private _patternCopy: Pattern | null
 
-  private cells: string[]
-
   private _gameWorker: Worker
+  private _resolvers: Map<string, Function>
 
   constructor(canvas: HTMLCanvasElement) {
     this._canvas = canvas
@@ -44,14 +49,20 @@ export default class Renderer {
     this._zoom = 58
 
     this._mouse = { x: 0, y: 0, isDown1: false, isDown2: false, kill: null }
-    this._askReset = false
     this._patternCopy = null
 
-    this.cells = []
+    this._resolvers = new Map()
 
     this._gameWorker = new Worker(new URL("../workers/game.ts", import.meta.url), {
       type: "module",
     })
+
+    this._gameWorker.onmessage = (event: MessageEvent<ResponseTypeWithId>) => {
+      const resolver = this._resolvers.get(event.data.id)
+
+      if (resolver) resolver(event.data.content)
+      else console.error("Invalid response id")
+    }
   }
 
   private render(cells: string[]) {
@@ -93,6 +104,7 @@ export default class Renderer {
 
   private togglePlaying() {
     this._playing = !this._playing
+    this.postMessage({ type: this._playing ? "start" : "stop", content: null })
     localStorage.setItem("playing", String(this._playing))
     SettingsIndicator.setPlaying(this._playing)
   }
@@ -122,37 +134,42 @@ export default class Renderer {
     return zoom
   }
 
-  private postMessage(type: string, message: any): Promise<any> {
+  private postMessage(request: RequestType): Promise<ResponseType["content"]> {
     return new Promise((resolve) => {
-      this._gameWorker.postMessage({ type, message })
-      this._gameWorker.onmessage = (event) => {
-        if (event.data.type === type) resolve(event.data.data)
-      }
+      let id = uuid()
+      const requestWithId: RequestTypeWithId = { ...request, id }
+
+      this._resolvers.set(id, resolve)
+
+      this._gameWorker.postMessage(requestWithId)
     })
   }
 
   private addPattern(pattern: Pattern, [x, y]: Coordinate) {
-    return this.postMessage("addPattern", { pattern: pattern.toJSON(), x, y })
+    return this.postMessage({
+      type: "pattern",
+      content: { pattern: pattern.toJson(), coord: [x, y] },
+    })
   }
 
   private clear() {
-    return this.postMessage("clear", null)
+    return this.postMessage({ type: "clear", content: null })
   }
 
   private reset() {
-    return this.postMessage("reset", null)
+    return this.postMessage({ type: "reset", content: null })
   }
 
   private setRule(rule: Rule) {
-    return this.postMessage("rule", { rule: rule.toJson() })
+    return this.postMessage({ type: "rule", content: { rule: rule.toJson() } })
   }
 
-  private async toggleLife([x, y]: Coordinate) {
-    return this.postMessage("toggleLife", { x, y })
+  private async save() {
+    return this.postMessage({ type: "save", content: null })
   }
 
-  private async iterate() {
-    return await this.postMessage("iterate", null)
+  private async toggleLife(coord: Coordinate) {
+    return this.postMessage({ type: "toggleCell", content: { coord } })
   }
 
   private setUpEventListeners() {
@@ -172,6 +189,8 @@ export default class Renderer {
     })
 
     this._canvas.addEventListener("mousedown", (event) => {
+      if (this._patternCopy) return
+
       if (event.button === 0) {
         this._mouse.isDown1 = true
         if (!this._patternCopy) return
@@ -186,15 +205,15 @@ export default class Renderer {
     })
 
     this._canvas.addEventListener("mouseup", (event) => {
+      if (this._patternCopy) {
+        const x = (event.clientX - this._center.x) / this._scale
+        const y = (event.clientY - this._center.y) / this._scale
+        return this.addPattern(this._patternCopy.toZeros(), [x, y])
+      }
+
       if (event.button === 0) {
         this._mouse.isDown1 = false
         this._mouse.kill = null
-
-        if (this._patternCopy) {
-          const x = (event.clientX - this._center.x) / this._scale
-          const y = (event.clientY - this._center.y) / this._scale
-          this.addPattern(this._patternCopy.toZeros(), [x, y])
-        }
       } else if (event.button === 2) {
         this._canvas.style.cursor = "unset"
         this._mouse.isDown2 = false
@@ -233,14 +252,13 @@ export default class Renderer {
       event.preventDefault()
     })
 
-    document.getElementById("reset")!.addEventListener("click", () => {
-      if (this._playing) this._askReset = true
-      else this.clear()
-    })
+    document.getElementById("reset")!.addEventListener("click", () => this.reset())
+
+    document.getElementById("clear")!.addEventListener("click", () => this.clear())
 
     document.getElementById("play")!.addEventListener("click", () => this.togglePlaying())
 
-    document.getElementById("clear")!.addEventListener("click", () => this.clear())
+    document.getElementById("save")!.addEventListener("click", () => this.save())
 
     document
       .getElementById("menu-button")!
@@ -253,13 +271,17 @@ export default class Renderer {
       )
     })
 
-    document.getElementById("speed-minus")!.addEventListener("click", () => {
+    SettingsIndicator.setDelay(this._delay)
+
+    document.getElementById("speed-minus")!.addEventListener("click", async () => {
       this._delay = Math.floor(+Math.max(Renderer.MIN_DELAY, this._delay * 0.9).toFixed(2))
+      await this.postMessage({ type: "delay", content: { delay: this._delay } })
       SettingsIndicator.setDelay(this._delay)
     })
 
-    document.getElementById("speed-plus")!.addEventListener("click", () => {
+    document.getElementById("speed-plus")!.addEventListener("click", async () => {
       this._delay = +Math.min(Renderer.MAX_DELAY, this._delay * 1.1).toFixed(2)
+      await this.postMessage({ type: "delay", content: { delay: this._delay } })
       SettingsIndicator.setDelay(this._delay)
     })
 
@@ -288,7 +310,7 @@ export default class Renderer {
           break
         case "k":
           if (!this._playing) {
-            this.iterate()
+            this.postMessage({ type: "iterate", content: null })
           }
           break
         case "ArrowRight":
@@ -320,8 +342,7 @@ export default class Renderer {
           )
           break
         case "r":
-          if (this._playing) this._askReset = true
-          else this.reset()
+          this.reset()
       }
     })
   }
@@ -329,8 +350,10 @@ export default class Renderer {
   private async loopRender() {
     while (true) {
       const timestamp = Date.now()
-      this.render(this.cells)
-      SettingsIndicator.setCellCount(this.cells.length)
+      const { cells } = await this.postMessage({ type: "cells", content: null })
+
+      this.render(cells)
+      SettingsIndicator.setCellCount(cells.length)
 
       const performance = Date.now() - timestamp
 
@@ -342,39 +365,14 @@ export default class Renderer {
     }
   }
 
-  private async loopIterate() {
-    while (true) {
-      while (this._playing) {
-        if (this._askReset) {
-          this._askReset = false
-          await this.reset()
-        }
-
-        const timestamp = Date.now()
-
-        const result = await this.iterate()
-        this.cells = result.cells
-
-        const performance = Date.now() - timestamp
-
-        const sleepTime = Math.max(1, this._delay - performance)
-        SettingsIndicator.setPerformanceI(performance)
-        SettingsIndicator.setIteration(result.iteration)
-
-        await this.sleep(sleepTime)
-      }
-
-      await this.sleep(100)
-    }
-  }
-
   public async start() {
     if (this._isStarted) return
     this._isStarted = true
 
     this.setUpEventListeners()
+    await this.postMessage({ type: "delay", content: { delay: this._delay } })
+    await this.postMessage({ type: "start", content: null })
 
     void this.loopRender()
-    void this.loopIterate()
   }
 }

@@ -21,11 +21,6 @@ export default class SettingsIndicator {
     delayElement.value = delay.toString()
   }
 
-  static setScale(scale: number) {
-    const scaleElement = document.getElementById("scale")! as HTMLInputElement
-    scaleElement.value = scale.toString()
-  }
-
   static setIteration(iteration: number) {
     const iterationElement = document.getElementById("iterate-count")!
     iterationElement.textContent = displayNumber(iteration)
@@ -64,11 +59,6 @@ export default class SettingsIndicator {
     } else {
       element.style.display = "none"
     }
-  }
-
-  static toggleWorker(worker: boolean) {
-    const element = document.getElementById("use-worker")!
-    element.firstElementChild!.className = worker ? "fa-solid fa-microchip" : "fa fa-user-tie"
   }
 
   static setUpRulesSelect() {

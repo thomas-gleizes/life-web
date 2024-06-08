@@ -1,10 +1,11 @@
 import Rule from "./Rule.ts"
 import { PATTERNS_LIST, RULES_LIST } from "../utils/constants.ts"
 import Pattern from "./Pattern.ts"
+import { Coordinate } from "../types"
 
 export default class Game {
   private _cellsAlive: Set<string>
-  private readonly _initialCells: string[]
+  private _initialCells: string[]
   private _iteration: number
   private rule: Rule
 
@@ -31,8 +32,11 @@ export default class Game {
     this._iteration = 0
   }
 
-  public addPattern(pattern: Pattern, originX: number = 0, originY: number = 0): void {
-    console.log(pattern)
+  public save() {
+    this._initialCells = Array.from(this._cellsAlive)
+  }
+
+  public addPattern(pattern: Pattern, [originX, originY]: Coordinate): void {
     for (const [x, y] of pattern.clone().centerOrigin().getCells()) {
       this._cellsAlive.add(`${Math.floor(x + originX)},${Math.floor(y + originY)}`)
     }
@@ -71,7 +75,7 @@ export default class Game {
     return this._iteration
   }
 
-  public toggleCell(x: number, y: number): void {
+  public toggleCell([x, y]: Coordinate): void {
     const cell = `${x},${y}`
     if (this._cellsAlive.has(cell)) {
       this._cellsAlive.delete(cell)
