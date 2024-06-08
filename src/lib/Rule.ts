@@ -1,28 +1,19 @@
 export default class Rule {
   private readonly _name: string
   private readonly _description: string
-  private readonly _neighborToDead: number[]
-  private readonly _neighborToAlive: number[]
+  private readonly _neighborToSurvive: number[]
+  private readonly _neighborToBorn: number[]
 
   constructor(
     name: string,
     description: string,
-    neighborToDead: number[],
-    neighborToAlive: number[],
+    neighborToSurvive: number[],
+    neighborToBorn: number[],
   ) {
     this._name = name
     this._description = description
-    this._neighborToDead = neighborToDead ?? []
-    this._neighborToAlive = neighborToAlive ?? []
-  }
-
-  static createFromObject(obj: {
-    name: string
-    description: string
-    neighborToDead: number[]
-    neighborToAlive: number[]
-  }): Rule {
-    return new Rule(obj.name, obj.description, obj.neighborToDead, obj.neighborToAlive)
+    this._neighborToSurvive = neighborToSurvive ?? []
+    this._neighborToBorn = neighborToBorn ?? []
   }
 
   get name(): string {
@@ -33,12 +24,12 @@ export default class Rule {
     return this._description
   }
 
-  mustDie(count: number): boolean {
-    return this._neighborToDead.includes(count)
+  mustSurvive(count: number): boolean {
+    return this._neighborToSurvive.includes(count)
   }
 
-  mustLive(count: number): boolean {
-    return this._neighborToAlive.includes(count)
+  mustBorn(count: number): boolean {
+    return this._neighborToBorn.includes(count)
   }
 
   toJson(): {
@@ -50,8 +41,8 @@ export default class Rule {
     return {
       name: this._name,
       description: this._description,
-      neighborToDead: this._neighborToDead,
-      neighborToAlive: this._neighborToAlive,
+      neighborToDead: this._neighborToSurvive,
+      neighborToAlive: this._neighborToBorn,
     }
   }
 

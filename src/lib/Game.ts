@@ -62,7 +62,7 @@ export default class Game {
     const newAliveCells = new Set<string>()
 
     for (const [cell, count] of neighborCounts.entries()) {
-      if ((this._cellsAlive.has(cell) && !rule.mustDie(count)) || rule.mustLive(count)) {
+      if ((this._cellsAlive.has(cell) && rule.mustSurvive(count)) || rule.mustBorn(count)) {
         newAliveCells.add(cell)
       }
     }
