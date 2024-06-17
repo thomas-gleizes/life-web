@@ -12,7 +12,7 @@ import {
 import uuid from "../utils/uuid.ts"
 
 export default class Renderer {
-  private static readonly FPS = 24
+  private static readonly FPS = 30
   private static readonly MIN_SCALE = 0.2
   private static readonly MIN_DELAY = 1
   private static readonly MAX_DELAY = 5000

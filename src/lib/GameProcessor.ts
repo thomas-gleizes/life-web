@@ -8,7 +8,7 @@ export default class GameProcessor {
   private isStarted: boolean
   private game: Game
   private delay: number
-  private callbackActions: Function[]
+  private readonly callbackActions: Function[]
 
   constructor() {
     this.isStarted = false
@@ -22,6 +22,18 @@ export default class GameProcessor {
     this.isRunning = running
   }
 
+  private addAction(action: Function): void {
+    if (!this.isRunning) action()
+    else this.callbackActions.push(action)
+  }
+
+  private async playActions() {
+    for (const action of [...this.callbackActions]) {
+      await action.bind(this)()
+      this.callbackActions.shift()
+    }
+  }
+
   private async sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
   }
@@ -32,11 +44,7 @@ export default class GameProcessor {
 
     while (true) {
       while (this.isRunning) {
-        for (const action of [...this.callbackActions]) {
-          await action.bind(this)()
-          this.callbackActions.shift()
-        }
-
+        await this.playActions()
         const timestamp = Date.now()
 
         await this.game.iterate()
@@ -48,7 +56,7 @@ export default class GameProcessor {
         await this.sleep(sleepTime)
       }
 
-      await this.sleep(1000)
+      await this.sleep(100)
     }
   }
 
@@ -70,27 +78,21 @@ export default class GameProcessor {
         break
       case "rule":
         const rule = Rule.fromJSON(content.rule)
-        if (this.isRunning) this.callbackActions.push(() => this.game.setRule(rule))
-        else this.game.setRule(rule)
+        this.addAction(() => this.game.setRule(rule))
         break
       case "toggleCell":
-        if (this.isRunning) this.callbackActions.push(() => this.game.toggleCell(content.coord))
-        else this.game.toggleCell(content.coord)
+        this.addAction(() => this.game.toggleCell(content.coord))
         break
       case "pattern":
         const pattern = Pattern.fromJson(content.pattern)
 
-        if (this.isRunning)
-          this.callbackActions.push(() => this.game.addPattern(pattern, content.coord))
-        else this.game.addPattern(pattern, content.coord)
+        this.addAction(() => this.game.addPattern(pattern, content.origin))
         break
       case "reset":
-        if (this.isRunning) this.callbackActions.push(() => this.game.reset())
-        else this.game.reset()
+        this.addAction(() => this.game.reset())
         break
       case "clear":
-        if (this.isRunning) this.callbackActions.push(() => this.game.clear())
-        else this.game.clear()
+        this.addAction(() => this.game.clear())
         break
       case "iterate":
         if (!this.isRunning) await this.game.iterate()
