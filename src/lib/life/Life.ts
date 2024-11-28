@@ -1,9 +1,10 @@
 import Rule from "./Rule.ts"
-import { PATTERNS_LIST, RULES_LIST } from "../utils/constants.ts"
+import { PATTERNS_LIST, RULES_LIST } from "../../utils/constants.ts"
 import Pattern from "./Pattern.ts"
-import { Coordinate } from "../types"
+import { Coordinate } from "../../types"
+import { calculateRangeSurface } from "../../utils/helpers.ts"
 
-export default class Game {
+export default class Life {
   private _cellsAlive: Set<string>
   private _initialCells: string[]
   private _iteration: number
@@ -84,7 +85,26 @@ export default class Game {
     }
   }
 
-  public get cellsAlive(): Array<string> {
-    return Array.from(this._cellsAlive)
+  public getCellsAlive(range: [Coordinate, Coordinate]): Array<string> {
+    if (calculateRangeSurface(range) > this._cellsAlive.size) {
+      return Array.from(this._cellsAlive).filter((cell) => {
+        const [x, y] = cell.split(",").map(Number)
+
+        return x >= range[0][0] && x <= range[1][0] && y >= range[0][1] && y <= range[1][1]
+      })
+    } else {
+      const cellsAlive: string[] = []
+      for (let x = range[0][0]; x <= range[1][0]; x++) {
+        for (let y = range[0][1]; y <= range[1][1]; y++) {
+          const cell = `${x},${y}`
+          if (!this._cellsAlive.has(cell)) cellsAlive.push(cell)
+        }
+      }
+      return cellsAlive
+    }
+  }
+
+  public get cellsAlive(): Set<string> {
+    return this._cellsAlive
   }
 }

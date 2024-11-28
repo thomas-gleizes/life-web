@@ -1,21 +1,23 @@
-import Game from "./Game.ts"
+import Life from "./life/Life.ts"
 import { RequestType, ResponseType } from "../types"
-import Rule from "./Rule.ts"
-import Pattern from "./Pattern.ts"
+import Rule from "./life/Rule.ts"
+import Pattern from "./life/Pattern.ts"
 
-export default class GameProcessor {
+export default class LifeProcessor {
   private isRunning: boolean
   private isStarted: boolean
-  private game: Game
+  private life: Life
   private delay: number
   private readonly callbackActions: Function[]
+  private lastIterationTime: number
 
   constructor() {
     this.isStarted = false
     this.isRunning = false
-    this.game = new Game()
+    this.life = new Life()
     this.delay = 100
     this.callbackActions = []
+    this.lastIterationTime = NaN
   }
 
   public setRunning(running: boolean): void {
@@ -47,11 +49,11 @@ export default class GameProcessor {
         await this.playActions()
         const timestamp = Date.now()
 
-        await this.game.iterate()
+        await this.life.iterate()
 
-        const elapsed = Date.now() - timestamp
+        this.lastIterationTime = Date.now() - timestamp
 
-        const sleepTime = Math.max(this.delay - elapsed, 1)
+        const sleepTime = Math.max(this.delay - this.lastIterationTime, 1)
 
         await this.sleep(sleepTime)
       }
@@ -61,8 +63,6 @@ export default class GameProcessor {
   }
 
   public async handleEvent({ type, content }: RequestType): Promise<ResponseType> {
-    const response: ResponseType = { type, content: {} }
-
     switch (type) {
       case "delay":
         this.delay = content.delay
@@ -74,36 +74,47 @@ export default class GameProcessor {
         this.setRunning(false)
         break
       case "save":
-        this.game.save()
+        this.life.save()
         break
       case "rule":
         const rule = Rule.fromJSON(content.rule)
-        this.addAction(() => this.game.setRule(rule))
+        this.addAction(() => this.life.setRule(rule))
         break
       case "toggleCell":
-        this.addAction(() => this.game.toggleCell(content.coord))
+        this.addAction(() => this.life.toggleCell(content.coord))
         break
       case "pattern":
         const pattern = Pattern.fromJson(content.pattern)
 
-        this.addAction(() => this.game.addPattern(pattern, content.origin))
+        this.addAction(() => this.life.addPattern(pattern, content.coord))
         break
       case "reset":
-        this.addAction(() => this.game.reset())
+        this.addAction(() => this.life.reset())
         break
       case "clear":
-        this.addAction(() => this.game.clear())
+        this.addAction(() => this.life.clear())
         break
       case "iterate":
-        if (!this.isRunning) await this.game.iterate()
+        if (!this.isRunning) await this.life.iterate()
         break
       case "cells":
-        response.content.cells = Array.from(this.game.cellsAlive)
-        break
+        const cells = content.range
+          ? this.life.getCellsAlive(content.range)
+          : Array.from(this.life.cellsAlive)
+
+        return { type, content: { cells: cells } }
+      case "info":
+        return {
+          type,
+          content: {
+            cellsAlive: this.life.cellsAlive.size,
+            lastIteration: this.lastIterationTime,
+          },
+        }
       default:
         break
     }
 
-    return response
+    return { type, content: {} }
   }
 }
