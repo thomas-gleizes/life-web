@@ -2,26 +2,23 @@ import { createRef, FC, useRef } from "preact/compat"
 
 import { AppProcessor } from "../lib/AppProcessor.ts"
 import { useEvent } from "../hooks/useEvent.ts"
+import { ArrayValues } from "../utils/ArrayValues.ts"
 
 type State = {
   center: { x: number; y: number }
-  scale: number
-  zoom: number
+  scale: ArrayValues<number>
   width: number
   height: number
   cells: string[]
 }
 
-const MAX_ZOOM = 100
-const MIN_ZOOM = 0
-const DEFAULT_SCALE = 2
+const SCALES = [0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 20, 50]
 
 export const Canvas: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) => {
   const context = createRef<CanvasRenderingContext2D>()
   const state = useRef<State>({
     center: { x: 500, y: 500 },
-    scale: 15,
-    zoom: 50,
+    scale: new ArrayValues(SCALES, SCALES.length - 1),
     width: 100,
     height: 100,
     cells: [],
@@ -30,17 +27,21 @@ export const Canvas: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) => 
   function render() {
     if (!context.current) return
 
+    console.log("render")
+
+    const scale = state.current.scale.getCurrent()
+
     context.current.clearRect(0, 0, state.current.width, state.current.height)
 
-    const rectWidth = state.current.scale
+    const rectWidth = scale
     const border = rectWidth / 10
     const padding = border / 2
     const rectSize = rectWidth - border
 
     for (const cell of state.current.cells) {
       const [x, y] = cell.split(",").map(Number)
-      const rectX = x * state.current.scale + state.current.center.x
-      const rectY = y * state.current.scale + state.current.center.y
+      const rectX = x * scale + state.current.center.x
+      const rectY = y * scale + state.current.center.y
 
       context.current.fillStyle = "white"
       context.current.fillRect(rectX + padding, rectY + padding, rectSize, rectSize)
@@ -71,16 +72,16 @@ export const Canvas: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) => 
       case " ":
         break
       case "ArrowUp":
-        state.current.center.y -= state.current.scale
+        state.current.center.y -= state.current.scale.getCurrent()
         break
       case "ArrowDown":
-        state.current.center.y += state.current.scale
+        state.current.center.y += state.current.scale.getCurrent()
         break
       case "ArrowRight":
-        state.current.center.x += state.current.scale
+        state.current.center.x += state.current.scale.getCurrent()
         break
       case "ArrowLeft":
-        state.current.center.x -= state.current.scale
+        state.current.center.x -= state.current.scale.getCurrent()
         break
     }
 
@@ -88,21 +89,16 @@ export const Canvas: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) => 
   })
 
   useEvent("wheel", (event) => {
-    const oldScale = state.current.scale
-    const scaleRatio = state.current.scale / oldScale
+    const oldScale = state.current.scale.getCurrent()
+
+    if (event.deltaY < 0) state.current.scale.next()
+    else state.current.scale.previous()
+
+    const scaleRatio = state.current.scale.getCurrent() / oldScale
 
     state.current.center.x = event.clientX - scaleRatio * (event.clientX - state.current.center.x)
     state.current.center.y = event.clientY - scaleRatio * (event.clientY - state.current.center.y)
 
-    if (event.deltaY < 0) state.current.zoom += 1
-    else state.current.zoom -= 1
-
-    state.current.zoom = Math.max(0, Math.min(100, state.current.zoom))
-    let scale = 2
-
-    for (let i = 0; i < state.current.zoom; i++) scale *= 1.09
-
-    state.current.scale = scale
     render()
   })
 
