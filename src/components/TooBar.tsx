@@ -2,11 +2,13 @@ import { FC } from "preact/compat"
 import { useState } from "preact/hooks"
 
 import { AppProcessor } from "../lib/AppProcessor.ts"
+import { useEvent } from "../hooks/useEvent.ts"
 
 const DELAY_RANGE = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000]
 
 export const ToolBar: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) => {
   const [currentIndex, setCurrentIndex] = useState<number>(5)
+  const [isRunning, setIsRunning] = useState<boolean>(appProcessor.isRunning)
 
   const handleDelay = (index: number) => {
     if (
@@ -18,14 +20,32 @@ export const ToolBar: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) =>
     }
   }
 
+  const toggleRunning = () => {
+    appProcessor.isRunning
+      ? appProcessor.stop().then(setIsRunning)
+      : appProcessor.start().then(setIsRunning)
+  }
+
+  useEvent("keydown", (event) => {
+    switch (event.key) {
+      case " ":
+        toggleRunning()
+        break
+    }
+  })
+
   return (
     <div className="absolute flex items-center space-x-2 px-2 top-4 left-4 bg-black bg-opacity-30 backdrop-blur-lg text-white rounded-2xl p-2">
       <div className="flex">
         <button
-          onClick={() => appProcessor.start()}
+          onClick={() => toggleRunning()}
           className="bg-red-800 h-8 w-8 flex justify-center items-center rounded-l-md"
         >
-          <i className="fa fa-play text-1xl" />
+          {isRunning ? (
+            <i className="fa fa-pause text-1xl" />
+          ) : (
+            <i className="fa fa-play text-1xl" />
+          )}
         </button>
         <button
           onClick={() => appProcessor.clear()}

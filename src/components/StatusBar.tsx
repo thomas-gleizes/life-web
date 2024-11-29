@@ -18,7 +18,7 @@ export const StatusBar: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) 
   })
 
   return (
-    <div className="absolute flex space-x-2 px-2 bottom-4 left-4 bg-black bg-opacity-30 backdrop-blur-lg text-white rounded-2xl p-2">
+    <div className="absolute flex space-x-2 px-2 bottom-4 left-4 bg-black bg-opacity-30 backdrop-blur-lg text-white rounded-sm p-2">
       <div>Alive = {cellsAlive.value}</div>
       <div>I = {lastIterationTime.value}ms</div>
     </div>

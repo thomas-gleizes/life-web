@@ -11,11 +11,15 @@ export default class Life {
   private rule: Rule
 
   constructor() {
-    this._cellsAlive = new Set<string>(PATTERNS_LIST.pulsar.clone().centerOrigin().toCells())
+    this._cellsAlive = new Set<string>()
 
     this._initialCells = Array.from(this._cellsAlive)
     this._iteration = 0
     this.rule = RULES_LIST.Conway
+
+    this._cellsAlive.add("0,0")
+    this._cellsAlive.add("-64,-46")
+    this._cellsAlive.add("64,46")
   }
 
   public reset(): void {

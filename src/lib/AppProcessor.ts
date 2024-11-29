@@ -7,6 +7,8 @@ export class AppProcessor {
   private readonly _worker: Worker
   private readonly _resolvers: Map<string, Function>
 
+  private _isRunning = false
+
   constructor() {
     this._worker = new Worker(new URL("../workers/life.ts", import.meta.url), {
       type: "module",
@@ -23,7 +25,7 @@ export class AppProcessor {
 
   private async send<T extends ActionType>(
     type: T,
-    content: Extract<RequestType, { type: T }>["content"],
+    content: Extract<RequestType, { type: T }>["content"]
   ): Promise<Extract<ResponseType, { type: T }>["content"]> {
     // @ts-ignore
     return new Promise((resolve) => {
@@ -38,10 +40,14 @@ export class AppProcessor {
 
   public start() {
     return this.send("start", null)
+      .then(() => (this._isRunning = true))
+      .then(() => this.isRunning)
   }
 
   public stop() {
     return this.send("stop", null)
+      .then(() => (this._isRunning = false))
+      .then(() => this.isRunning)
   }
 
   public setDelay(delay: number) {
@@ -82,5 +88,9 @@ export class AppProcessor {
 
   public getInfo() {
     return this.send("info", null)
+  }
+
+  public get isRunning() {
+    return this._isRunning
   }
 }

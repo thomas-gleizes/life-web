@@ -3,6 +3,7 @@ import { createRef, FC, useRef } from "preact/compat"
 import { AppProcessor } from "../lib/AppProcessor.ts"
 import { useEvent } from "../hooks/useEvent.ts"
 import { ArrayValues } from "../utils/ArrayValues.ts"
+import { Coordinate } from "../types"
 
 type State = {
   center: { x: number; y: number }
@@ -10,24 +11,46 @@ type State = {
   width: number
   height: number
   cells: string[]
+  isDragging: boolean
+  startDrag: { x: number; y: number }
 }
 
-const SCALES = [0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 20, 50]
+const SCALES = [
+  0.1, 0.175, 0.25, 0.375, 0.5, 0.75, 1, 1.75, 2.5, 3.75, 5, 7.5, 10, 17.5, 25, 37.5, 50,
+]
 
 export const Canvas: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) => {
   const context = createRef<CanvasRenderingContext2D>()
   const state = useRef<State>({
-    center: { x: 500, y: 500 },
-    scale: new ArrayValues(SCALES, SCALES.length - 1),
+    center: { x: 0, y: 0 },
+    scale: new ArrayValues(SCALES, SCALES.length - 5),
     width: 100,
     height: 100,
     cells: [],
+    isDragging: false,
+    startDrag: { x: 0, y: 0 },
   })
+
+  function getRange(): [Coordinate, Coordinate] {
+    const scale = state.current.scale.getCurrent()
+    const halfWidth = state.current.width / scale
+    const halfHeight = state.current.height / scale
+
+    const topLeft: Coordinate = [
+      state.current.center.x / scale - halfWidth,
+      state.current.center.y / scale - halfHeight,
+    ]
+
+    const bottomLeft: Coordinate = [
+      state.current.center.x / scale + halfWidth,
+      state.current.center.y / scale + halfHeight,
+    ]
+
+    return [topLeft, bottomLeft]
+  }
 
   function render() {
     if (!context.current) return
-
-    console.log("render")
 
     const scale = state.current.scale.getCurrent()
 
@@ -61,16 +84,43 @@ export const Canvas: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) => 
     if (!context) return
 
     setInterval(async () => {
-      const { cells } = await appProcessor.getCells()
+      const range = getRange()
+
+      const { cells } = await appProcessor.getCells(getRange())
       state.current.cells = cells
       render()
     }, 1000 / 30)
   }
 
+  const handlePointerDown = (event: PointerEvent) => {
+    state.current.isDragging = true
+    state.current.startDrag = { x: event.clientX, y: event.clientY }
+  }
+
+  const handlePointerMove = (event: PointerEvent) => {
+    if (!state.current.isDragging) return
+
+    const dx = event.clientX - state.current.startDrag.x
+    const dy = event.clientY - state.current.startDrag.y
+
+    state.current.center.x += dx
+    state.current.center.y += dy
+
+    state.current.startDrag = { x: event.clientX, y: event.clientY }
+
+    render()
+  }
+
+  const handlePointerUp = () => {
+    state.current.isDragging = false
+  }
+
+  useEvent("pointerdown", handlePointerDown)
+  useEvent("pointermove", handlePointerMove)
+  useEvent("pointerup", handlePointerUp)
+
   useEvent("keydown", (event) => {
     switch (event.key) {
-      case " ":
-        break
       case "ArrowUp":
         state.current.center.y -= state.current.scale.getCurrent()
         break

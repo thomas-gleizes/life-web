@@ -5,7 +5,7 @@ import { Canvas } from "./components/Canvas.tsx"
 
 const appProcessor = new AppProcessor()
 
-appProcessor.start().then(() => appProcessor.setDelay(50))
+// appProcessor.start().then(() => appProcessor.setDelay(50))
 
 export function App() {
   return (
