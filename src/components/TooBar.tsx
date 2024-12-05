@@ -1,8 +1,6 @@
-import { FC } from "preact/compat"
-import { useState } from "preact/hooks"
-
-import { AppProcessor } from "../lib/AppProcessor.ts"
-import { useEvent } from "../hooks/useEvent.ts"
+import { AppProcessor } from "../lib/AppProcessor"
+import { useEvent } from "../hooks/useEvent"
+import { FC, useState } from "react"
 
 const DELAY_RANGE = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000]
 
@@ -66,6 +64,15 @@ export const ToolBar: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) =>
           <i className="fa-solid fa-floppy-disk text-1xl" />
         </button>
       </div>
+      <div>
+        <button
+          onClick={() => appProcessor.addSoupe([100, 100], 100, 100, 0.5)}
+          className="bg-red-800 h-8 w-8 flex justify-center items-center rounded-l-md"
+        >
+          <i className="fa fa-menu"></i>
+        </button>
+      </div>
+
       <div className="flex items-center">
         <button
           onClick={() => handleDelay(-1)}

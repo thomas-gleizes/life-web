@@ -1,8 +1,7 @@
-import Rule from "./Rule.ts"
-import { PATTERNS_LIST, RULES_LIST } from "../../utils/constants.ts"
-import Pattern from "./Pattern.ts"
-import { Coordinate } from "../../types"
-import { calculateRangeSurface } from "../../utils/helpers.ts"
+import Rule from "./Rule"
+import { PATTERNS_LIST, RULES_LIST } from "../../utils/constants"
+import Pattern from "./Pattern"
+import { Coordinate, RangeC } from "../../types"
 
 export default class Life {
   private _cellsAlive: Set<string>
@@ -11,15 +10,16 @@ export default class Life {
   private rule: Rule
 
   constructor() {
-    this._cellsAlive = new Set<string>()
+    this._cellsAlive = new Set<string>([
+      // ...PATTERNS_LIST.gliderGun.clone().toCells(),
+      // ...PATTERNS_LIST.gliderGun.clone().symmetricX().toCells(),
+      // ...PATTERNS_LIST.gliderGun.clone().symmetricXY().toCells(),
+      // ...PATTERNS_LIST.gliderGun.clone().symmetricY().toCells(),
+    ])
 
     this._initialCells = Array.from(this._cellsAlive)
     this._iteration = 0
     this.rule = RULES_LIST.Conway
-
-    this._cellsAlive.add("0,0")
-    this._cellsAlive.add("-64,-46")
-    this._cellsAlive.add("64,46")
   }
 
   public reset(): void {
@@ -48,7 +48,7 @@ export default class Life {
   }
 
   public async iterate(): Promise<void> {
-    const neighborCounts = new Map()
+    const neighborCounts = new Map<string, number>()
     const rule = this.rule
 
     for (const cell of this._cellsAlive) {
@@ -89,17 +89,21 @@ export default class Life {
     }
   }
 
-  public getCellsAlive(range: [Coordinate, Coordinate]): Array<string> {
-    if (calculateRangeSurface(range) > this._cellsAlive.size) {
+  public getCellsAlive(range: RangeC): Array<string> {
+    const {
+      coordinate: [rx, ry],
+    } = range
+
+    if (range.width * range.height > this._cellsAlive.size) {
       return Array.from(this._cellsAlive).filter((cell) => {
         const [x, y] = cell.split(",").map(Number)
 
-        return x >= range[0][0] && x <= range[1][0] && y >= range[0][1] && y <= range[1][1]
+        return x >= rx && x <= rx + range.width && y >= ry && y <= ry + range.height
       })
     } else {
       const cellsAlive: string[] = []
-      for (let x = range[0][0]; x <= range[1][0]; x++) {
-        for (let y = range[0][1]; y <= range[1][1]; y++) {
+      for (let x = rx; x <= rx + range.width; x++) {
+        for (let y = ry; y <= ry + range.height; y++) {
           const cell = `${x},${y}`
           if (!this._cellsAlive.has(cell)) cellsAlive.push(cell)
         }
@@ -110,5 +114,17 @@ export default class Life {
 
   public get cellsAlive(): Set<string> {
     return this._cellsAlive
+  }
+
+  public addSoup(origin: Coordinate, width: number, height: number, probability: number) {
+    for (let x = 0; x < width; x++) {
+      for (let y = 0; y < height; y++) {
+        const coordinate = [origin[0] + x, origin[1] + y].join(",")
+
+        if (Math.random() > probability && !this._cellsAlive.has(coordinate)) {
+          this._cellsAlive.add(coordinate)
+        }
+      }
+    }
   }
 }

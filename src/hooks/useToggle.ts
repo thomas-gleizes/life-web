@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks"
+import { useState } from "react"
 
 export function useToggle(initialValue: boolean): [boolean, (value?: boolean) => void] {
   const [value, setValue] = useState<boolean>(initialValue)

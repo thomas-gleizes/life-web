@@ -1,4 +1,5 @@
 export type Coordinate = [number, number]
+export type RangeC = { coordinate: Coordinate; width: number; height: number }
 
 // Define the shared base type
 export type EventType = {
@@ -13,14 +14,18 @@ export type RequestType =
   | { type: "iterate"; content: null }
   | { type: "reset"; content: null }
   | { type: "save"; content: null }
-  | { type: "cells"; content: { range?: [Coordinate, Coordinate] } }
+  | { type: "cells"; content: { range?: RangeC } }
   | { type: "clear"; content: null }
   | { type: "info"; content: null }
   | { type: "info"; content: null }
-  | { type: "toggleCell"; content: { coord: Coordinate } }
+  | { type: "toggleCell"; content: { coordinate: Coordinate } }
   | { type: "rule"; content: { rule: object } }
   | { type: "delay"; content: { delay: number } }
-  | { type: "pattern"; content: { pattern: object; coord: Coordinate } }
+  | { type: "pattern"; content: { pattern: object; coordinate: Coordinate } }
+  | {
+      type: "soup"
+      content: { origin: Coordinate; width: number; height: number; probability: number }
+    }
 
 export type ResponseType =
   | { type: "cells"; content: { cells: string[] } }
@@ -37,6 +42,7 @@ export type ResponseType =
         | "pattern"
         | "toggleCell"
         | "save"
+        | "soup"
       content: {}
     }
 

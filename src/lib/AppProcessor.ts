@@ -1,7 +1,7 @@
-import uuid from "../utils/uuid.ts"
-import { ActionType, Coordinate, RequestType, ResponseType } from "../types"
-import Rule from "./life/Rule.ts"
-import Pattern from "./life/Pattern.ts"
+import uuid from "../utils/uuid"
+import { ActionType, Coordinate, RangeC, RequestType, ResponseType } from "../types"
+import Rule from "./life/Rule"
+import Pattern from "./life/Pattern"
 
 export class AppProcessor {
   private readonly _worker: Worker
@@ -10,7 +10,7 @@ export class AppProcessor {
   private _isRunning = false
 
   constructor() {
-    this._worker = new Worker(new URL("../workers/life.ts", import.meta.url), {
+    this._worker = new Worker(new URL("../workers/life_worker", import.meta.url), {
       type: "module",
     })
     this._resolvers = new Map()
@@ -27,8 +27,7 @@ export class AppProcessor {
     type: T,
     content: Extract<RequestType, { type: T }>["content"]
   ): Promise<Extract<ResponseType, { type: T }>["content"]> {
-    // @ts-ignore
-    return new Promise((resolve) => {
+    return new Promise<any>((resolve) => {
       let id = uuid()
       const requestWithId = { type, content, id }
 
@@ -38,13 +37,13 @@ export class AppProcessor {
     })
   }
 
-  public start() {
+  public async start() {
     return this.send("start", null)
       .then(() => (this._isRunning = true))
       .then(() => this.isRunning)
   }
 
-  public stop() {
+  public async stop() {
     return this.send("stop", null)
       .then(() => (this._isRunning = false))
       .then(() => this.isRunning)
@@ -54,8 +53,8 @@ export class AppProcessor {
     return this.send("delay", { delay })
   }
 
-  public toggleCell(coord: Coordinate) {
-    return this.send("toggleCell", { coord })
+  public toggleCell(coordinate: Coordinate) {
+    return this.send("toggleCell", { coordinate })
   }
 
   public iterate() {
@@ -66,8 +65,8 @@ export class AppProcessor {
     return this.send("rule", { rule: rule.toJson() })
   }
 
-  public setPattern(pattern: Pattern, coord: Coordinate) {
-    return this.send("pattern", { pattern: pattern.toJson(), coord })
+  public setPattern(pattern: Pattern, coordinate: Coordinate) {
+    return this.send("pattern", { pattern: pattern.toJson(), coordinate })
   }
 
   public reset() {
@@ -82,12 +81,16 @@ export class AppProcessor {
     return this.send("save", null)
   }
 
-  public getCells(range?: [Coordinate, Coordinate]) {
+  public getCells(range?: RangeC) {
     return this.send("cells", { range })
   }
 
   public getInfo() {
     return this.send("info", null)
+  }
+
+  public addSoupe(origin: Coordinate, width: number, height: number, probability: number) {
+    return this.send("soup", { origin, width, height, probability })
   }
 
   public get isRunning() {

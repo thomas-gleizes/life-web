@@ -1,52 +1,50 @@
-import { createRef, FC, useRef } from "preact/compat"
+import { FC, useEffect, useRef } from "react"
 
-import { AppProcessor } from "../lib/AppProcessor.ts"
-import { useEvent } from "../hooks/useEvent.ts"
-import { ArrayValues } from "../utils/ArrayValues.ts"
-import { Coordinate } from "../types"
+import { AppProcessor } from "../lib/AppProcessor"
+import { useEvent } from "../hooks/useEvent"
+import { ArrayValues } from "../utils/ArrayValues"
+import { RangeC } from "../types"
+import { round } from "../utils/helpers"
 
 type State = {
-  center: { x: number; y: number }
+  origin: { x: number; y: number }
   scale: ArrayValues<number>
   width: number
   height: number
   cells: string[]
-  isDragging: boolean
-  startDrag: { x: number; y: number }
+  mouse: { isDown: boolean; x: number; y: number; downAt: null | number }
 }
 
 const SCALES = [
-  0.1, 0.175, 0.25, 0.375, 0.5, 0.75, 1, 1.75, 2.5, 3.75, 5, 7.5, 10, 17.5, 25, 37.5, 50,
+  0.1, 0.175, 0.25, 0.375, 0.5, 0.75, 1, 1.75, 2, 2.5, 3.75, 5, 7.5, 10, 17.5, 25, 37.5, 50,
 ]
 
+const FRAME_RATE = 25
+
 export const Canvas: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) => {
-  const context = createRef<CanvasRenderingContext2D>()
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const context = useRef<CanvasRenderingContext2D>()
+
   const state = useRef<State>({
-    center: { x: 0, y: 0 },
-    scale: new ArrayValues(SCALES, SCALES.length - 5),
+    origin: { x: 0, y: 0 },
+    scale: new ArrayValues(SCALES, 6 + 2),
     width: 100,
     height: 100,
     cells: [],
-    isDragging: false,
-    startDrag: { x: 0, y: 0 },
+    mouse: { x: 0, y: 0, isDown: false, downAt: null },
   })
 
-  function getRange(): [Coordinate, Coordinate] {
+  function getRange(): RangeC {
     const scale = state.current.scale.getCurrent()
-    const halfWidth = state.current.width / scale
-    const halfHeight = state.current.height / scale
 
-    const topLeft: Coordinate = [
-      state.current.center.x / scale - halfWidth,
-      state.current.center.y / scale - halfHeight,
-    ]
-
-    const bottomLeft: Coordinate = [
-      state.current.center.x / scale + halfWidth,
-      state.current.center.y / scale + halfHeight,
-    ]
-
-    return [topLeft, bottomLeft]
+    return {
+      coordinate: [
+        round(-state.current.origin.x / scale, 2),
+        round(-state.current.origin.y / scale, 2),
+      ],
+      width: round(state.current.width / scale, 2),
+      height: round(state.current.height / scale, 2),
+    }
   }
 
   function render() {
@@ -63,94 +61,132 @@ export const Canvas: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) => 
 
     for (const cell of state.current.cells) {
       const [x, y] = cell.split(",").map(Number)
-      const rectX = x * scale + state.current.center.x
-      const rectY = y * scale + state.current.center.y
+
+      const rectX = x * scale + state.current.origin.x
+      const rectY = y * scale + state.current.origin.y
 
       context.current.fillStyle = "white"
       context.current.fillRect(rectX + padding, rectY + padding, rectSize, rectSize)
     }
   }
 
-  const handleRef = (canvas: HTMLCanvasElement | null) => {
-    if (!canvas) return
-
-    canvas.width = state.current.width = window.innerWidth
-    canvas.height = state.current.height = window.innerHeight
-    state.current.center.x = state.current.width / 2
-    state.current.center.y = state.current.height / 2
-
-    context.current = canvas.getContext("2d")
-
-    if (!context) return
-
-    setInterval(async () => {
-      const range = getRange()
-
-      const { cells } = await appProcessor.getCells(getRange())
-      state.current.cells = cells
-      render()
-    }, 1000 / 30)
-  }
-
   const handlePointerDown = (event: PointerEvent) => {
-    state.current.isDragging = true
-    state.current.startDrag = { x: event.clientX, y: event.clientY }
+    state.current.mouse.isDown = true
+    state.current.mouse.downAt = Date.now()
   }
 
   const handlePointerMove = (event: PointerEvent) => {
-    if (!state.current.isDragging) return
+    if (state.current.mouse.isDown) {
+      const dx = event.clientX - state.current.mouse.x
+      const dy = event.clientY - state.current.mouse.y
 
-    const dx = event.clientX - state.current.startDrag.x
-    const dy = event.clientY - state.current.startDrag.y
+      state.current.origin.x += dx
+      state.current.origin.y += dy
 
-    state.current.center.x += dx
-    state.current.center.y += dy
-
-    state.current.startDrag = { x: event.clientX, y: event.clientY }
-
-    render()
-  }
-
-  const handlePointerUp = () => {
-    state.current.isDragging = false
-  }
-
-  useEvent("pointerdown", handlePointerDown)
-  useEvent("pointermove", handlePointerMove)
-  useEvent("pointerup", handlePointerUp)
-
-  useEvent("keydown", (event) => {
-    switch (event.key) {
-      case "ArrowUp":
-        state.current.center.y -= state.current.scale.getCurrent()
-        break
-      case "ArrowDown":
-        state.current.center.y += state.current.scale.getCurrent()
-        break
-      case "ArrowRight":
-        state.current.center.x += state.current.scale.getCurrent()
-        break
-      case "ArrowLeft":
-        state.current.center.x -= state.current.scale.getCurrent()
-        break
+      render()
     }
 
+    state.current.mouse.x = event.clientX
+    state.current.mouse.y = event.clientY
+
+    console.log("MOUSE", state.current.mouse)
+  }
+
+  const handlePointerUp = (event: PointerEvent) => {
+    if (Date.now() - state.current.mouse.downAt! < 200) {
+      console.log(event.clientX + state.current.origin.x, event.clientY + state.current.origin.y)
+      appProcessor
+        .toggleCell([
+          event.clientX + state.current.origin.x,
+          event.clientY + state.current.origin.y,
+        ])
+        .then(console.log)
+    }
+
+    state.current.mouse.isDown = false
+    state.current.mouse.downAt = null
+  }
+
+  useEvent("pointerdown", handlePointerDown, canvasRef.current)
+  useEvent("pointermove", handlePointerMove, canvasRef.current)
+  useEvent("pointerup", handlePointerUp, canvasRef.current)
+
+  useEvent(
+    "keydown",
+    (event) => {
+      switch (event.key) {
+        case "ArrowUp":
+          state.current.origin.y += state.current.height / 10
+          break
+        case "ArrowDown":
+          state.current.origin.y -= state.current.height / 10
+          break
+        case "ArrowRight":
+          state.current.origin.x -= state.current.width / 10
+          break
+        case "ArrowLeft":
+          state.current.origin.x += state.current.width / 10
+          break
+      }
+
+      render()
+    },
+    canvasRef.current,
+  )
+
+  useEvent(
+    "click",
+    (event) => {
+      console.log("Click", event)
+    },
+    canvasRef.current,
+  )
+
+  useEvent(
+    "wheel",
+    (event) => {
+      const oldScale = state.current.scale.getCurrent()
+
+      if (event.deltaY < 0) state.current.scale.next()
+      else state.current.scale.previous()
+
+      const scaleRatio = state.current.scale.getCurrent() / oldScale
+
+      state.current.origin.x = event.clientX - scaleRatio * (event.clientX - state.current.origin.x)
+      state.current.origin.y = event.clientY - scaleRatio * (event.clientY - state.current.origin.y)
+
+      render()
+    },
+    canvasRef.current,
+  )
+
+  useEvent("resize", () => {
+    if (!context.current) return
+
+    context.current.canvas.width = state.current.width = window.innerWidth
+    context.current.canvas.height = state.current.height = window.innerHeight
+
     render()
   })
 
-  useEvent("wheel", (event) => {
-    const oldScale = state.current.scale.getCurrent()
+  useEffect(() => {
+    if (!canvasRef.current) return
+    canvasRef.current.width = state.current.width = window.innerWidth
+    canvasRef.current.height = state.current.height = window.innerHeight
 
-    if (event.deltaY < 0) state.current.scale.next()
-    else state.current.scale.previous()
+    context.current = canvasRef.current.getContext("2d")
 
-    const scaleRatio = state.current.scale.getCurrent() / oldScale
+    if (!context) return
 
-    state.current.center.x = event.clientX - scaleRatio * (event.clientX - state.current.center.x)
-    state.current.center.y = event.clientY - scaleRatio * (event.clientY - state.current.center.y)
+    const interval = setInterval(async () => {
+      const { cells } = await appProcessor.getCells(getRange())
+      state.current.cells = cells
 
-    render()
-  })
+      render()
+    }, 1000 / FRAME_RATE)
 
-  return <canvas ref={handleRef} className="" />
+    return () => clearInterval(interval)
+  }, [])
+
+  return <canvas ref={canvasRef} className="block" />
 }

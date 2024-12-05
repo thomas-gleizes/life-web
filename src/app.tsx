@@ -1,11 +1,11 @@
-import { AppProcessor } from "./lib/AppProcessor.ts"
-import { ToolBar } from "./components/TooBar.tsx"
-import { StatusBar } from "./components/StatusBar.tsx"
-import { Canvas } from "./components/Canvas.tsx"
+import { AppProcessor } from "./lib/AppProcessor"
+import { ToolBar } from "./components/TooBar"
+import { StatusBar } from "./components/StatusBar"
+import { Canvas } from "./components/Canvas"
 
 const appProcessor = new AppProcessor()
 
-// appProcessor.start().then(() => appProcessor.setDelay(50))
+appProcessor.start().then(() => appProcessor.setDelay(1000 / 60))
 
 export function App() {
   return (

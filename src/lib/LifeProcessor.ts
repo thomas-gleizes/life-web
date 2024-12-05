@@ -1,7 +1,7 @@
-import Life from "./life/Life.ts"
+import Life from "./life/Life"
 import { RequestType, ResponseType } from "../types"
-import Rule from "./life/Rule.ts"
-import Pattern from "./life/Pattern.ts"
+import Rule from "./life/Rule"
+import Pattern from "./life/Pattern"
 
 export default class LifeProcessor {
   private isRunning: boolean
@@ -81,12 +81,12 @@ export default class LifeProcessor {
         this.addAction(() => this.life.setRule(rule))
         break
       case "toggleCell":
-        this.addAction(() => this.life.toggleCell(content.coord))
+        this.addAction(() => this.life.toggleCell(content.coordinate))
         break
       case "pattern":
         const pattern = Pattern.fromJson(content.pattern)
 
-        this.addAction(() => this.life.addPattern(pattern, content.coord))
+        this.addAction(() => this.life.addPattern(pattern, content.coordinate))
         break
       case "reset":
         this.addAction(() => this.life.reset())
@@ -111,6 +111,11 @@ export default class LifeProcessor {
             lastIteration: this.lastIterationTime,
           },
         }
+      case "soup":
+        this.addAction(() =>
+          this.life.addSoup(content.origin, content.width, content.height, content.probability)
+        )
+        break
       default:
         break
     }
