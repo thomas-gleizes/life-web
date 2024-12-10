@@ -1,5 +1,5 @@
-import Rule from "../lib/life/Rule.ts"
-import Pattern from "../lib/life/Pattern.ts"
+import Rule from "../lib/life/Rule"
+import Pattern from "../lib/life/Pattern"
 
 export const RULES_LIST = {
   Conway: new Rule(

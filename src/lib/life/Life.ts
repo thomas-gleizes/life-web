@@ -11,10 +11,10 @@ export default class Life {
 
   constructor() {
     this._cellsAlive = new Set<string>([
-      // ...PATTERNS_LIST.gliderGun.clone().toCells(),
-      // ...PATTERNS_LIST.gliderGun.clone().symmetricX().toCells(),
-      // ...PATTERNS_LIST.gliderGun.clone().symmetricXY().toCells(),
-      // ...PATTERNS_LIST.gliderGun.clone().symmetricY().toCells(),
+      ...PATTERNS_LIST.gliderGun.clone().toCells(),
+      ...PATTERNS_LIST.gliderGun.clone().symmetricX().toCells(),
+      ...PATTERNS_LIST.gliderGun.clone().symmetricXY().toCells(),
+      ...PATTERNS_LIST.gliderGun.clone().symmetricY().toCells(),
     ])
 
     this._initialCells = Array.from(this._cellsAlive)
@@ -105,7 +105,7 @@ export default class Life {
       for (let x = rx; x <= rx + range.width; x++) {
         for (let y = ry; y <= ry + range.height; y++) {
           const cell = `${x},${y}`
-          if (!this._cellsAlive.has(cell)) cellsAlive.push(cell)
+          if (this._cellsAlive.has(cell)) cellsAlive.push(cell)
         }
       }
       return cellsAlive

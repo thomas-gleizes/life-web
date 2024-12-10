@@ -27,7 +27,7 @@ export const Canvas: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) => 
 
   const state = useRef<State>({
     origin: { x: 0, y: 0 },
-    scale: new ArrayValues(SCALES, 6 + 2),
+    scale: new ArrayValues(SCALES, 13),
     width: 100,
     height: 100,
     cells: [],
@@ -88,17 +88,16 @@ export const Canvas: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) => 
 
     state.current.mouse.x = event.clientX
     state.current.mouse.y = event.clientY
-
-    console.log("MOUSE", state.current.mouse)
   }
 
   const handlePointerUp = (event: PointerEvent) => {
     if (Date.now() - state.current.mouse.downAt! < 200) {
-      console.log(event.clientX + state.current.origin.x, event.clientY + state.current.origin.y)
+      const scale = state.current.scale.getCurrent()
+
       appProcessor
         .toggleCell([
-          event.clientX + state.current.origin.x,
-          event.clientY + state.current.origin.y,
+          Math.floor(event.clientX / scale + state.current.origin.x),
+          Math.floor(event.clientY / scale + state.current.origin.y),
         ])
         .then(console.log)
     }

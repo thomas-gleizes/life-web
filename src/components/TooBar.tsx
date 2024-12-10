@@ -1,6 +1,7 @@
 import { AppProcessor } from "../lib/AppProcessor"
 import { useEvent } from "../hooks/useEvent"
-import { FC, useState } from "react"
+import { ChangeEvent, FC, useState } from "react"
+import { RULES_LIST } from "../utils/constants"
 
 const DELAY_RANGE = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000]
 
@@ -31,6 +32,15 @@ export const ToolBar: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) =>
         break
     }
   })
+
+  const handleRule = (event: ChangeEvent<HTMLSelectElement>) => {
+    const rule = rules.find((rule) => rule.name === event.target.value)
+    if (!rule) return
+
+    appProcessor.setRule(rule).then(console.log)
+  }
+
+  const rules = Object.values(RULES_LIST)
 
   return (
     <div className="absolute flex items-center space-x-2 px-2 top-4 left-4 bg-black bg-opacity-30 backdrop-blur-lg text-white rounded-2xl p-2">
@@ -71,6 +81,13 @@ export const ToolBar: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) =>
         >
           <i className="fa fa-menu"></i>
         </button>
+      </div>
+      <div className="flex">
+        <select className="text-black h-full" onChange={handleRule}>
+          {rules.map((rule) => (
+            <option value={rule.name}>{rule.name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="flex items-center">
