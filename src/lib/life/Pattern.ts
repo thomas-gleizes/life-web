@@ -1,5 +1,5 @@
-import Rule from "./Rule.ts"
-import { RULES_LIST } from "../../utils/constants.ts"
+import Rule from "./Rule"
+import { RULES_LIST } from "../../utils/constants"
 import { Coordinate } from "../../types"
 
 export type CellPattern = ("0" | "X")[][]

@@ -173,9 +173,11 @@ export const Canvas: FC<{ appProcessor: AppProcessor }> = ({ appProcessor }) => 
     canvasRef.current.width = state.current.width = window.innerWidth
     canvasRef.current.height = state.current.height = window.innerHeight
 
-    context.current = canvasRef.current.getContext("2d")
+    const canvasRenderingContext2D = canvasRef.current.getContext("2d")
 
-    if (!context) return
+    if (!canvasRenderingContext2D) return
+
+    context.current = canvasRenderingContext2D
 
     const interval = setInterval(async () => {
       const { cells } = await appProcessor.getCells(getRange())

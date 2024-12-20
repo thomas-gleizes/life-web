@@ -1,4 +1,4 @@
-import LifeProcessor from "../lib/LifeProcessor.ts"
+import LifeProcessor from "../lib/LifeProcessor"
 import { RequestTypeWithId } from "../types"
 
 const lifeProcessor = new LifeProcessor()
