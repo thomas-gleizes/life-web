@@ -1,16 +1,21 @@
-import Rule from "./Rule.ts"
-import { PATTERNS_LIST, RULES_LIST } from "../utils/constants.ts"
-import Pattern from "./Pattern.ts"
-import { Coordinate } from "../types"
+import Rule from "./Rule"
+import { PATTERNS_LIST, RULES_LIST } from "../../utils/constants"
+import Pattern from "./Pattern"
+import { Coordinate, RangeC } from "../../types"
 
-export default class Game {
+export default class Life {
   private _cellsAlive: Set<string>
   private _initialCells: string[]
   private _iteration: number
   private rule: Rule
 
   constructor() {
-    this._cellsAlive = new Set<string>(PATTERNS_LIST.pulsar.clone().centerOrigin().toCells())
+    this._cellsAlive = new Set<string>([
+      ...PATTERNS_LIST.gliderGun.clone().toCells(),
+      ...PATTERNS_LIST.gliderGun.clone().symmetricX().toCells(),
+      ...PATTERNS_LIST.gliderGun.clone().symmetricXY().toCells(),
+      ...PATTERNS_LIST.gliderGun.clone().symmetricY().toCells(),
+    ])
 
     this._initialCells = Array.from(this._cellsAlive)
     this._iteration = 0
@@ -43,7 +48,7 @@ export default class Game {
   }
 
   public async iterate(): Promise<void> {
-    const neighborCounts = new Map()
+    const neighborCounts = new Map<string, number>()
     const rule = this.rule
 
     for (const cell of this._cellsAlive) {
@@ -84,7 +89,42 @@ export default class Game {
     }
   }
 
-  public get cellsAlive(): Array<string> {
-    return Array.from(this._cellsAlive)
+  public getCellsAlive(range: RangeC): Array<string> {
+    const {
+      coordinate: [rx, ry],
+    } = range
+
+    if (range.width * range.height > this._cellsAlive.size) {
+      return Array.from(this._cellsAlive).filter((cell) => {
+        const [x, y] = cell.split(",").map(Number)
+
+        return x >= rx && x <= rx + range.width && y >= ry && y <= ry + range.height
+      })
+    } else {
+      const cellsAlive: string[] = []
+      for (let x = rx; x <= rx + range.width; x++) {
+        for (let y = ry; y <= ry + range.height; y++) {
+          const cell = `${x},${y}`
+          if (this._cellsAlive.has(cell)) cellsAlive.push(cell)
+        }
+      }
+      return cellsAlive
+    }
+  }
+
+  public get cellsAlive(): Set<string> {
+    return this._cellsAlive
+  }
+
+  public addSoup(origin: Coordinate, width: number, height: number, probability: number) {
+    for (let x = 0; x < width; x++) {
+      for (let y = 0; y < height; y++) {
+        const coordinate = [origin[0] + x, origin[1] + y].join(",")
+
+        if (Math.random() > probability && !this._cellsAlive.has(coordinate)) {
+          this._cellsAlive.add(coordinate)
+        }
+      }
+    }
   }
 }

@@ -1,15 +1,9 @@
+import React from "react"
+import ReactDom from "react-dom/client"
+
 import "./index.css"
-import Renderer from "./lib/Renderer.ts"
+import { App } from "./App"
 
-const canvas = document.querySelector("canvas")! as HTMLCanvasElement
-canvas.width = window.innerWidth
-canvas.height = window.innerHeight
+const root = document.getElementById("root") as Element
 
-const renderer = new Renderer(canvas)
-
-void renderer.start()
-
-window.addEventListener("resize", () => {
-  canvas.width = window.innerWidth
-  canvas.height = window.innerHeight
-})
+ReactDom.createRoot(root).render(<App />)

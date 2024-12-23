@@ -1,17 +1,32 @@
-import Rule from "./Rule.ts"
-import { RULES_LIST } from "../utils/constants.ts"
+import Rule from "./Rule"
+import { RULES_LIST } from "../../utils/constants"
+import { Coordinate } from "../../types"
 
-export type CellPattern = [number, number]
+export type CellPattern = ("0" | "X")[][]
 
 export default class Pattern {
   private _name: string
-  private cells: CellPattern[]
+  private cells: Coordinate[]
   private readonly _rule: Rule
 
-  constructor(pattern: CellPattern[] = [], name = "", rule: Rule = RULES_LIST.Conway) {
+  constructor(pattern: Coordinate[] = [], name = "", rule: Rule = RULES_LIST.Conway) {
     this.cells = [...pattern]
     this._rule = rule
     this._name = name
+  }
+
+  static from(cellPattern: CellPattern, name: string): Pattern {
+    const cells: Coordinate[] = []
+
+    for (let i = 0; i < cellPattern.length; i++) {
+      for (let j = 0; j < cellPattern[i].length; j++) {
+        if (cellPattern[i][j] === "X") {
+          cells.push([j, i])
+        }
+      }
+    }
+
+    return new Pattern(cells, name)
   }
 
   public get name() {
@@ -22,7 +37,7 @@ export default class Pattern {
     this._name = name
   }
 
-  public addCellPattern(pattern: CellPattern[]) {
+  public addCellPattern(pattern: Coordinate[]) {
     this.cells.push(...pattern)
     return this
   }
@@ -68,7 +83,7 @@ export default class Pattern {
     return this
   }
 
-  public getCells(): CellPattern[] {
+  public getCells(): Coordinate[] {
     return this.cells
   }
 

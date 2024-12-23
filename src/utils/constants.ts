@@ -1,5 +1,5 @@
-import Rule from "../lib/Rule.ts"
-import Pattern from "../lib/Pattern.ts"
+import Rule from "../lib/life/Rule"
+import Pattern from "../lib/life/Pattern"
 
 export const RULES_LIST = {
   Conway: new Rule(
@@ -137,6 +137,14 @@ export const RULES_LIST = {
 } as const
 
 export const PATTERNS_LIST = {
+  cubeX9: Pattern.from(
+    [
+      ["X", "X", "X"],
+      ["X", "X", "X"],
+      ["X", "X", "X"],
+    ],
+    "Cube x9",
+  ),
   cubeX4: new Pattern(
     [
       [0, 0],
